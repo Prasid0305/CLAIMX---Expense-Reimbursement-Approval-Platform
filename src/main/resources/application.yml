@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: claimx
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/claimx
+    username: claimx_user
+    password: claimx_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update #during development
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+    defer-datasource-initialization: true
+
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+
+
+jwt:
+  secret: this_is_a_secret_key_for_climax_a_expense_reimbursement_and_approval_26_platform
+  expiration: 3600000
