@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * response dto for audit log
+ * contains log info like logId, claim id, performed by, action, old and new status, comments
+ */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,7 +25,7 @@ public class AuditLogResponse {
     private String action;
     private String oldStatus;
     private String newStatus;
-    private String comments;
+//    private String comments;
     private LocalDateTime timestamp;
 
 }

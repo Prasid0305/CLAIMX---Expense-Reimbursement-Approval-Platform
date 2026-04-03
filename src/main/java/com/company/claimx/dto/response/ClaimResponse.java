@@ -14,6 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+/**
+ * response DTO for claim claim details
+ */
 public class ClaimResponse {
 
     private Long claimId;//

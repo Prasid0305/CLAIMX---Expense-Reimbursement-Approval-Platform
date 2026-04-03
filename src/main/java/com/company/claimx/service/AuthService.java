@@ -1,5 +1,6 @@
 package com.company.claimx.service;
 
+import com.company.claimx.constants.ErrorMessageConstants;
 import com.company.claimx.dto.request.LoginRequest;
 import com.company.claimx.dto.response.LoginResponse;
 import com.company.claimx.entity.User;
@@ -14,6 +15,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service class responsible for handling user authentication.
+ * Provides login functionality using Spring Security and JWT token generation.
+ */
 @Service
 public class AuthService {
 
@@ -26,6 +31,15 @@ public class AuthService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    /**
+     * Authenticates a user based on the provided login credentials.
+     * This method performs the following steps:
+     * @param loginRequest the login request containing user email and password
+     * @return LoginResponse containing the JWT token, email, and role
+     * @throws UserNotFoundException   if no user is found with the provided email
+     * @throws UserInactiveException   if the user account is inactive
+     * @throws BadCredentialsException if the email or password is invalid
+     */
     public LoginResponse login(LoginRequest loginRequest)  {
 
         try{
@@ -38,9 +52,9 @@ public class AuthService {
             );
 
             User user = userRepository.findByEmail((loginRequest.getEmail()))
-                    .orElseThrow(()->new UserNotFoundException("user not found"));
+                    .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND));
             if(!user.getIsActive()){
-                throw new UserInactiveException("user inactive");
+                throw new UserInactiveException(ErrorMessageConstants.USER_INACTIVE);
             }
             String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
@@ -52,7 +66,7 @@ public class AuthService {
 
 
         }catch (BadCredentialsException e){
-            throw new BadCredentialsException("invalid email or password ");  //i will add a custom exception
+            throw new BadCredentialsException(ErrorMessageConstants.INVALID_CREDIENTIALS);  //i will add a custom exception
         }
 
 

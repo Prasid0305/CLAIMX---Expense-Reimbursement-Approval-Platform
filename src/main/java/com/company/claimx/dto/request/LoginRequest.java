@@ -4,6 +4,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
+/**
+ * login request dto
+ * contains credentials
+ */
+
 @Data
 
 public class LoginRequest {
@@ -16,10 +21,12 @@ public class LoginRequest {
     private String password;
 
 
-    public LoginRequest(String email, String password) {
+    public LoginRequest() {
         this.email = email;
         this.password = password;
     }
+
+
 
     public String getEmail() {
         return email;

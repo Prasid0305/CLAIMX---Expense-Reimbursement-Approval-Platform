@@ -13,10 +13,10 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-#    defer-datasource-initialization: true
+    defer-datasource-initialization: true
   sql:
     init:
-      mode: never
+      mode: always
 
 jwt:
   secret: this_is_a_secret_key_for_climax_a_expense_reimbursement_and_approval_26_platform

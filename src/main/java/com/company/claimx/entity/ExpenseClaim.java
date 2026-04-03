@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * entity representing an expense claim
+ */
 @Entity
 @Table(name="expense_claims")
 @Data

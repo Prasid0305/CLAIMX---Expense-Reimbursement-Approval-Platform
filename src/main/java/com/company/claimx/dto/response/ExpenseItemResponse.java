@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * response dto to expense item
+ * includes item id, claim id, category, etc.
+ */
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

@@ -1,5 +1,7 @@
 package com.company.claimx.controller;
 
+import com.company.claimx.annotation.Authenticated;
+import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.request.ApproveClaimRequest;
 import com.company.claimx.dto.request.RejectClaimRequest;
 import com.company.claimx.dto.response.ClaimResponse;
@@ -15,6 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * controller class for the manager operation
+ * provides endpoints for retrieving the SUBMITTED claims, APPROVE or REJECT the claims, get the claims by id
+ */
 @RestController
 @RequestMapping("/api/manager/claims")
 @Tag(name = "manager approval", description = "Review and approve/reject claims")
@@ -24,42 +30,67 @@ public class ManagerController {
     private ManagerService managerService;
 
 
-
+    /**
+     * endpoint to get all the submitted claim
+     * @return - claim response list
+     */
     @GetMapping("/pending")
+    @Authenticated(roles = {"MANAGER"})
     public ResponseEntity<List<ClaimResponse>> getPendingClaims(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = authentication.getName();
+
+        String userEmail = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claims = managerService.getPendingClaims(userEmail);
         return ResponseEntity.ok(claims);
     }
-    @GetMapping("/pending/{claimId}")
-    public ResponseEntity<ClaimResponse> getPendingClaimById(@PathVariable Long claimId){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = authentication.getName();
+    /**
+     * endpoint to get a submitted claim by  Id
+     * @param claimId - id of the claim
+     * @return
+     */
+    @GetMapping("/pending/{claimId}")
+    @Authenticated(roles = {"MANAGER"})
+    public ResponseEntity<ClaimResponse> getPendingClaimById(@PathVariable Long claimId){
+
+
+        String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.getPendingClaimById(claimId, userEmail);
 
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * endpoint to approve a submitted claim
+     * @param claimId - id of the claim
+     * @param approveClaimRequest - request containing the comment for approving the claim request
+     * @return - claim response to the approved claim
+     */
     @PostMapping("/pending/{claimId}/approve")
+    @Authenticated(roles = {"MANAGER"})
     public ResponseEntity<ClaimResponse> approvePendingClaimById(@PathVariable Long claimId, @Valid @RequestBody ApproveClaimRequest approveClaimRequest){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = authentication.getName();
+
+        String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.approvePendingClaimById(claimId, approveClaimRequest, userEmail);
 
         return ResponseEntity.ok(response);
     }
-    @PostMapping("/pending/{claimId}/reject")
-    public ResponseEntity<ClaimResponse> rejectPendingClaimById(@PathVariable Long claimId, @Valid @RequestBody RejectClaimRequest rejectClaimRequest){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String userEmail = authentication.getName();
+    /**
+     * endpoint to reject a submitted claim
+     * @param claimId - id of the claim
+     * @param rejectClaimRequest - request containing the comment for rejecting the claim request
+     * @return - claim response of the rejected claim
+     */
+    @PostMapping("/pending/{claimId}/reject")
+    @Authenticated(roles = {"MANAGER"})
+    public ResponseEntity<ClaimResponse> rejectPendingClaimById(@PathVariable Long claimId, @Valid @RequestBody RejectClaimRequest rejectClaimRequest){
+
+        String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.rejectPendingClaimById(claimId, rejectClaimRequest, userEmail);
 

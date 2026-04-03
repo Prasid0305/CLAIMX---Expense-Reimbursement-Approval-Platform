@@ -3,6 +3,9 @@ package com.company.claimx.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * request dto for claim creation
+ */
 @Data
 public class CreateClaimRequest {
 

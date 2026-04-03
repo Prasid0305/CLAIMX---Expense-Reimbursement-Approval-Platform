@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * entity representing an expense item in a claim
+ */
 @Entity
 @Table(name="expense_item")
 @Data

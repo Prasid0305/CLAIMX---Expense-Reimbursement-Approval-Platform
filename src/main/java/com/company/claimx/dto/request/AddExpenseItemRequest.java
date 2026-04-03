@@ -2,6 +2,7 @@ package com.company.claimx.dto.request;
 
 import com.company.claimx.enums.Category;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.Data;
@@ -9,6 +10,10 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * request dto for adding expense items
+ * contains basic details required to add items
+ */
 @Data
 public class AddExpenseItemRequest {
 

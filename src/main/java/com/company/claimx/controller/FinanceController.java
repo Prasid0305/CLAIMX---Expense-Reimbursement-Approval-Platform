@@ -1,5 +1,7 @@
 package com.company.claimx.controller;
 
+import com.company.claimx.annotation.Authenticated;
+import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.service.FinanceService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * controller class for the finance user operation
+ * provides endpoints for retrieving the approved claims, pay the claims, get the paid claims
+ */
 @RestController
 @RequestMapping("/api/finance/claims")
 @Tag(name = "finance approvals", description = "pay the approved claims")
@@ -19,32 +25,48 @@ public class FinanceController {
     @Autowired
     FinanceService financeService;
 
+    /**
+     * endpoint to get the approved claims
+     * @return - claim response, list of all the approved claims
+     */
     @GetMapping("/approved")
+    @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<List<ClaimResponse>> getApprovedClaim(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String financeUser = authentication.getName();
+
+        String financeUser = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claimResponseList = financeService.getApprovedClaim(financeUser);
 
         return ResponseEntity.ok(claimResponseList);
     }
 
+    /**
+     * endpoint to pay the claims
+     * @param claimId - id of the claim
+     * @return - claim response of the paid claim
+     */
     @PostMapping("/{claimId}/paid")
+    @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<ClaimResponse> payClaims(@PathVariable Long claimId){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String financeUser = authentication.getName();
+
+        String financeUser = AuthenticationContext.getUserEmail();
 
         ClaimResponse claimResponse  = financeService.payClaims(claimId, financeUser );
 
         return ResponseEntity.ok(claimResponse);
     }
 
+    /**
+     * endpoint to get all the paid claim
+     * @return - claim response list of the paid claim
+     */
     @GetMapping("/paid")
+    @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<List<ClaimResponse>> getAllPaidClaim(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String financeUser = authentication.getName();
+
+        String financeUser = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claimResponseList = financeService.getAllPaidClaim(financeUser);
 

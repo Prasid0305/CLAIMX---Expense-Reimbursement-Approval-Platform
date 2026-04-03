@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * request dto for adding multiple items
+ * contains a list to add the items
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

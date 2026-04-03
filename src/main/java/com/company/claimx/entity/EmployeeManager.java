@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * entity representing employee_manager
+ */
 @Entity
 @Table(name="employee_manager")
 @Data

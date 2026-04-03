@@ -12,6 +12,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * request dto to update the expense item
+ * contains info of the item
+ */
+
 @Data
 
 public class UpdateExpenseItemRequest {

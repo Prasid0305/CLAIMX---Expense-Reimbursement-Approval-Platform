@@ -1,10 +1,12 @@
 package com.company.claimx.service;
 
+import com.company.claimx.constants.ErrorMessageConstants;
 import com.company.claimx.dto.response.*;
 import com.company.claimx.entity.*;
 import com.company.claimx.enums.UserRole;
 import com.company.claimx.exception.UserNotFoundException;
 import com.company.claimx.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * service class to define all the business logic of admin services
+ * To get all the users, get all the claims, get particular user's details along with the claim, get all the audit logs
+ */
 @Service
 public class AdminServices {
 
@@ -35,10 +41,16 @@ public class AdminServices {
     @Autowired
     private EmployeeManagerRepository employeeManagerRepository;
 
-
+    /**
+     * to get all the users for the admin
+     * @param userEmail - admin email
+     * @return - list of all the users
+     * @throws UserNotFoundException - if the admin user is not found
+     */
+    @Transactional
     public List<UserResponse> getAllUsers(String userEmail){
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()->new UserNotFoundException("user not found "));
+                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND));
         List<User> users = userRepository.findAll();
         
         return users.stream()
@@ -46,6 +58,11 @@ public class AdminServices {
                 .collect(Collectors.toUnmodifiableList());
     }
 
+    /**
+     * to map the user details
+     * @param user - user for the userResponse.
+     * @return - details of the user
+     */
     private UserResponse mapToUserResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -58,10 +75,17 @@ public class AdminServices {
                 .build();
     }
 
+    /**
+     * to get all the claim of all the users
+     * @param userEmail - admin user email
+     * @return - list of all the claims
+     * @throws UserNotFoundException
+     */
+    @Transactional
     public List<ClaimResponse> getAllClaims(String userEmail){
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()->new UserNotFoundException("user not found "));
+                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND));
 
 
         List<ExpenseClaim> claims = expenseClaimRepository.findAll();
@@ -69,6 +93,12 @@ public class AdminServices {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * to map all the claims
+     * @param savedClaim -
+     * @return claim response
+     */
     private ClaimResponse mapToResponse(ExpenseClaim savedClaim) {
 
         String managerName = null;
@@ -110,6 +140,11 @@ public class AdminServices {
                 .build();
     }
 
+    /**
+     * map the item response
+     * @param expenseItem - item with all the details
+     * @return - expense item with the details
+     */
     private ExpenseItemResponse mapItemToResponse(ExpenseItem expenseItem) {
         return ExpenseItemResponse.builder()
                 .itemId(expenseItem.getItemId())
@@ -121,11 +156,16 @@ public class AdminServices {
                 .build();
     }
 
-
+    /**
+     * to get all the audit logs
+     * @param userEmail - to authorize the admin user
+     * @return - the list of all the audit logs
+     */
+    @Transactional
     public List<AuditLogResponse> getAllAuditLogs(String userEmail) {
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()->new UserNotFoundException("user not found "));
+                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.ADMIN_NOT_FOUND));
 
 
         List<AuditLog> logs = auditService.getAllLogs();
@@ -134,6 +174,7 @@ public class AdminServices {
                 .map(this::mapToAuditLogResponse)
                 .collect(Collectors.toList());
     }
+
 
     private AuditLogResponse mapToAuditLogResponse(AuditLog auditLog) {
         return AuditLogResponse.builder()
@@ -144,14 +185,20 @@ public class AdminServices {
                 .action(auditLog.getAction())
                 .oldStatus(auditLog.getOldStatus())
                 .newStatus(auditLog.getNewStatus())
-                .comments(auditLog.getComments())
                 .timestamp(auditLog.getTimestamp())
                 .build();
     }
 
+    /**
+     * to get all the user details with all his claims
+     * @param userId - get user id inorder to retrieve the user details and the claims
+     * @return - user response with the claims
+     * @throws UserNotFoundException - if the user is not found
+     */
+    @Transactional
     public UserWithClaimResponse getUserWithClaims(Long userId){
         User user = userRepository.findById(userId)
-                .orElseThrow(()->new UserNotFoundException("user not found "));
+                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND_WITH_ID +userId));
 
 
         List<ExpenseClaim> claims = expenseClaimRepository.findByEmployee(user);

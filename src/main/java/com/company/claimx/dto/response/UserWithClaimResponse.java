@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * response dto for user with claim response
+ * contains user details and also the claims that belongs to the claim
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

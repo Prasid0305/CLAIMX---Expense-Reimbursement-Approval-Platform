@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
+/**
+ * entity representing an user
+ */
 @Entity
 @Table(name = "users")
 @Data

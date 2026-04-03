@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * entity representing an audit log
+ */
 @Entity
 @Data
 @AllArgsConstructor

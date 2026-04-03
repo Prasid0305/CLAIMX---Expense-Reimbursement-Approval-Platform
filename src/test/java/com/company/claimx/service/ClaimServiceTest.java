@@ -1,17 +1,21 @@
 package com.company.claimx.service;
 
+import com.company.claimx.constants.ErrorMessageConstants;
 import com.company.claimx.dto.request.CreateClaimRequest;
+import com.company.claimx.dto.request.UpdateClaimRequest;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.entity.EmployeeManager;
 import com.company.claimx.entity.ExpenseClaim;
 import com.company.claimx.entity.User;
+import com.company.claimx.enums.AuditActions;
 import com.company.claimx.enums.ClaimStatus;
 import com.company.claimx.enums.UserRole;
+import com.company.claimx.exception.InvalidClaimStatus;
+import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
 import com.company.claimx.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,6 +23,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -111,7 +118,7 @@ public class ClaimServiceTest {
 
         when(employeeManagerRepository.findByEmployee(employee)).thenReturn(Optional.of(employeeManager));
 
-        when(expenseClaimRepository.getNextClaimSequence()).thenReturn(1012L);
+
 
         when(expenseClaimRepository.save(any(ExpenseClaim.class)))
                 .thenReturn(claim);
@@ -135,13 +142,18 @@ public class ClaimServiceTest {
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
         verify(employeeManagerRepository, times(2)).findByEmployee(employee);
         verify(expenseClaimRepository, times(1)).save(any(ExpenseClaim.class));
-        verify(auditService, times(1)).logClaimAction(any(ExpenseClaim.class), eq(employee), eq("created claim"), eq(null), eq("DRAFT"), eq("claim created"));
+        verify(auditService, times(1)).logClaimAction(
+                any(ExpenseClaim.class),
+                eq(employee),
+                eq(AuditActions.CLAIM_CREATED.getValue()),
+                eq(null),
+                eq("DRAFT"));
 
         logger.info(" claim created , test successful");
     }
 
     @Test
-    void createClaim_USerNotFound_throwException(){
+    void createClaim_UserNotFound_throwException(){
         when(userRepository.findByEmail("emptyemail@claimx.com"))
                 .thenReturn(Optional.empty());
 
@@ -155,18 +167,18 @@ public class ClaimServiceTest {
 
     @Test
     void createClaim_NoManagerAssigned_ThrowsException() {
-        // Arrange
+
         when(userRepository.findByEmail("test.employee@claimx.com"))
                 .thenReturn(Optional.of(employee));
         when(employeeManagerRepository.findByEmployee(employee))
                 .thenReturn(Optional.empty());
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             claimService.createClaim(createClaimRequest, "test.employee@claimx.com");
         });
 
-        assertEquals("Employee's manager not found", exception.getMessage());
+        assertEquals(ErrorMessageConstants.EMPLOYEE_MANAGER_NOT_FOUND, exception.getMessage());
         verify(expenseClaimRepository, never()).save(any(ExpenseClaim.class));
     }
 
@@ -182,22 +194,24 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(java.util.Collections.emptyList());
 
-        // Act
+
         ClaimResponse response = claimService.getClaimById(1L, "pedri.employee@claimx.com");
 
-        // Assert
+
         assertNotNull(response);
         assertEquals(1L, response.getClaimId());
         assertEquals("BusinessTrip", response.getTitle());
 
         verify(expenseClaimRepository, times(1)).findById(1L);
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+
+
     }
 
 
     @Test
     void submitClaim_Success() {
-        // Arrange
+
         when(expenseClaimRepository.findById(1L))
                 .thenReturn(Optional.of(claim));
         when(userRepository.findByEmail("pedri.employee@claimx.com"))
@@ -211,7 +225,7 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(java.util.Collections.emptyList());
 
-        // Act
+
         ClaimResponse response = claimService.submitClaim(1L, "pedri.employee@claimx.com");
 
         // Assert
@@ -223,12 +237,279 @@ public class ClaimServiceTest {
         verify(auditService, times(1)).logClaimAction(
                 eq(claim),
                 eq(employee),
-                eq("claim submitted"),
-                any(),
-                eq("Submitted"),
-                eq("claim submitted")
+                eq(AuditActions.CLAIM_SUBMITTED.getValue()),
+                eq("SUBMITTED"),
+                eq("SUBMITTED")
         );
 
+    }
+
+    @Test
+    public void testGetAllMyClaims() {
+
+        ExpenseClaim claim2 = new ExpenseClaim();
+        claim2.setClaimId(2L);
+        claim2.setClaimNumber("CLM-2026-01013");
+        claim2.setTitle("Office Supplies");
+        claim2.setEmployee(employee);
+        claim2.setStatus(ClaimStatus.SUBMITTED);
+        claim2.setTotalAmount(new BigDecimal("5000.00"));
+        claim2.setCreatedAt(LocalDateTime.now());
+
+        ExpenseClaim claim3 = new ExpenseClaim();
+        claim3.setClaimId(3L);
+        claim3.setClaimNumber("CLM-2026-01014");
+        claim3.setTitle("Client Meeting");
+        claim3.setEmployee(employee);
+        claim3.setStatus(ClaimStatus.APPROVED);
+        claim3.setTotalAmount(new BigDecimal("8000.00"));
+        claim3.setCreatedAt(LocalDateTime.now());
+
+        List<ExpenseClaim> claims = Arrays.asList(claim, claim2, claim3);
+
+        when(userRepository.findByEmail("pedri.employee@claimx.com")).thenReturn(Optional.of(employee));
+        when(expenseClaimRepository.findByEmployee(employee)).thenReturn(claims);
+        when(employeeManagerRepository.findByEmployee(employee)).thenReturn(Optional.of(employeeManager));
+        when(expenseItemRepository.findByClaimClaimId(anyLong())).thenReturn(Collections.emptyList());
+
+
+        List<ClaimResponse> responses = claimService.getAllMyClaims("pedri.employee@claimx.com");
+
+
+        assertNotNull(responses, "Response list must not be null");
+        assertEquals(3, responses.size(), "Should return 3 claims");
+
+        assertEquals(1L, responses.get(0).getClaimId());
+        assertEquals("BusinessTrip", responses.get(0).getTitle());
+        assertEquals(ClaimStatus.DRAFT, responses.get(0).getStatus());
+
+        assertEquals(2L, responses.get(1).getClaimId());
+        assertEquals("Office Supplies", responses.get(1).getTitle());
+        assertEquals(ClaimStatus.SUBMITTED, responses.get(1).getStatus());
+
+        assertEquals(3L, responses.get(2).getClaimId());
+        assertEquals("Client Meeting", responses.get(2).getTitle());
+        assertEquals(ClaimStatus.APPROVED, responses.get(2).getStatus());
+
+        verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+        verify(expenseClaimRepository, times(1)).findByEmployee(employee);
+        verify(employeeManagerRepository, times(3)).findByEmployee(employee); // Once per claim
+        verify(expenseItemRepository, times(3)).findByClaimClaimId(anyLong()); // Once per claim
+
+        logger.info("Get all my claims test successful");
+    }
+
+    @Test
+    public void testGetAllMyClaimsByStatus() {
+
+        ExpenseClaim draftClaim2 = new ExpenseClaim();
+        draftClaim2.setClaimId(2L);
+        draftClaim2.setClaimNumber("CLM-2026-01013");
+        draftClaim2.setTitle("Another Draft");
+        draftClaim2.setEmployee(employee);
+        draftClaim2.setStatus(ClaimStatus.DRAFT);
+        draftClaim2.setTotalAmount(BigDecimal.ZERO);
+        draftClaim2.setCreatedAt(LocalDateTime.now());
+
+        List<ExpenseClaim> draftClaims = Arrays.asList(claim, draftClaim2);
+
+        when(userRepository.findByEmail("pedri.employee@claimx.com"))
+                .thenReturn(Optional.of(employee));
+        when(expenseClaimRepository.findByEmployeeAndStatus(employee, ClaimStatus.DRAFT))
+                .thenReturn(draftClaims);
+        when(employeeManagerRepository.findByEmployee(employee))
+                .thenReturn(Optional.of(employeeManager));
+        when(expenseItemRepository.findByClaimClaimId(anyLong()))
+                .thenReturn(Collections.emptyList());
+
+
+        List<ClaimResponse> responses = claimService.getAllMyClaimsByStatus(
+                "pedri.employee@claimx.com",
+                ClaimStatus.DRAFT
+        );
+
+
+        assertNotNull(responses, "Response list must not be null");
+        assertEquals(2, responses.size(), "Should return 2 DRAFT claims");
+
+        assertEquals(ClaimStatus.DRAFT, responses.get(0).getStatus());
+        assertEquals(ClaimStatus.DRAFT, responses.get(1).getStatus());
+
+        assertEquals("BusinessTrip", responses.get(0).getTitle());
+        assertEquals("Another Draft", responses.get(1).getTitle());
+
+        verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+        verify(expenseClaimRepository, times(1)).findByEmployeeAndStatus(employee, ClaimStatus.DRAFT);
+        verify(employeeManagerRepository, times(2)).findByEmployee(employee);
+        verify(expenseItemRepository, times(2)).findByClaimClaimId(anyLong());
+
+        logger.info("Get claims by status test successful");
+    }
+
+    @Test
+    public void testDeleteClaimSuccess(){
+        when(userRepository.findByEmail("pedri@claimx.com")).thenReturn(Optional.of(employee));
+
+        when(expenseClaimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        claimService.deleteClaim(1L,"pedri@claimx.com");
+
+        verify(userRepository, times(1)).findByEmail("pedri@claimx.com");
+        verify(expenseClaimRepository, times(1)).findById(1L);
+        verify(auditLogRepository, times(1)).deleteByClaimClaimId(1L);
+        verify(expenseClaimRepository,times(1)).delete(claim);
+        verify(expenseItemRepository,times(1)).deleteByClaimClaimId(1L);
+
+        logger.info("Delet claim test successful");
+    }
+
+    @Test
+    public void testDeleteClaim_UnauthorizedOwner_ThrowsException() {
+
+        User anotherUser = new User();
+        anotherUser.setId(99L);
+        anotherUser.setEmail("another.employee@claimx.com");
+        anotherUser.setName("Another Employee");
+
+        when(userRepository.findByEmail("another.employee@claimx.com"))
+                .thenReturn(Optional.of(anotherUser));
+        when(expenseClaimRepository.findById(1L))
+                .thenReturn(Optional.of(claim));
+
+
+        UnauthorizedAccessException exception = assertThrows(
+                UnauthorizedAccessException.class,
+                () -> claimService.deleteClaim(1L, "another.employee@claimx.com")
+        );
+
+        assertEquals("You can only delete your own claims", exception.getMessage());
+
+        verify(userRepository, times(1)).findByEmail("another.employee@claimx.com");
+        verify(expenseClaimRepository, times(1)).findById(1L);
+        verify(expenseClaimRepository, never()).delete(any(ExpenseClaim.class));
+
+        logger.info("Delete claim, Unauthorized owner test successful");
+    }
+
+    @Test
+    public void testDeleteClaim_NotDraftStatus_ThrowsException() {
+
+        claim.setStatus(ClaimStatus.SUBMITTED);
+
+        when(userRepository.findByEmail("pedri.employee@claimx.com"))
+                .thenReturn(Optional.of(employee));
+        when(expenseClaimRepository.findById(1L))
+                .thenReturn(Optional.of(claim));
+
+
+        InvalidClaimStatus exception = assertThrows(
+                InvalidClaimStatus.class,
+                () -> claimService.deleteClaim(1L, "pedri.employee@claimx.com")
+        );
+
+        assertEquals(ErrorMessageConstants.INVALID_CLAIM_STATUS_FOR_CLAIM_DELETION, exception.getMessage());
+
+        verify(expenseClaimRepository, never()).delete(any(ExpenseClaim.class));
+
+        logger.info("Delete claim, not draft status test successful");
+    }
+
+    @Test
+    public void testUpdateClaimSuccess() {
+
+        UpdateClaimRequest updateRequest = new UpdateClaimRequest();
+        updateRequest.setTitle("Updated Business Trip");
+
+        when(expenseClaimRepository.findById(1L))
+                .thenReturn(Optional.of(claim));
+        when(userRepository.findByEmail("pedri.employee@claimx.com"))
+                .thenReturn(Optional.of(employee));
+
+
+        ExpenseClaim updatedClaim = new ExpenseClaim();
+        updatedClaim.setClaimId(1L);
+        updatedClaim.setClaimNumber("CLM-2026-01012");
+        updatedClaim.setTitle("Updated Business Trip");
+        updatedClaim.setEmployee(employee);
+        updatedClaim.setStatus(ClaimStatus.DRAFT);
+        updatedClaim.setTotalAmount(BigDecimal.ZERO);
+        updatedClaim.setCreatedAt(LocalDateTime.now());
+
+        when(expenseClaimRepository.save(any(ExpenseClaim.class)))
+                .thenReturn(updatedClaim);
+        when(employeeManagerRepository.findByEmployee(employee))
+                .thenReturn(Optional.of(employeeManager));
+        when(expenseItemRepository.findByClaimClaimId(1L))
+                .thenReturn(Collections.emptyList());
+
+
+        ClaimResponse response = claimService.updateClaim(1L, updateRequest, "pedri.employee@claimx.com");
+
+
+        assertNotNull(response, "Response must not be null");
+        assertEquals(1L, response.getClaimId());
+        assertEquals("Updated Business Trip", response.getTitle());
+        assertEquals(ClaimStatus.DRAFT, response.getStatus());
+
+        verify(expenseClaimRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+        verify(expenseClaimRepository, times(1)).save(any(ExpenseClaim.class));
+
+        logger.info("Update claim test successful");
+    }
+
+    @Test
+    public void testUpdateClaim_UnauthorizedOwner_ThrowsException() {
+
+        User anotherUser = new User();
+        anotherUser.setId(99L);
+        anotherUser.setEmail("another.employee@claimx.com");
+
+        UpdateClaimRequest updateRequest = new UpdateClaimRequest();
+        updateRequest.setTitle("Updated Title");
+
+        when(expenseClaimRepository.findById(1L))
+                .thenReturn(Optional.of(claim));
+        when(userRepository.findByEmail("another.employee@claimx.com"))
+                .thenReturn(Optional.of(anotherUser));
+
+
+        UnauthorizedAccessException exception = assertThrows(
+                UnauthorizedAccessException.class,
+                () -> claimService.updateClaim(1L, updateRequest, "another.employee@claimx.com")
+        );
+
+        assertEquals(ErrorMessageConstants.UNAUTHORIZED_CLAIM_UPDATING, exception.getMessage());
+
+        verify(expenseClaimRepository, never()).save(any(ExpenseClaim.class));
+
+        logger.info("Update claim Unauthorized test successful");
+    }
+
+    @Test
+    public void testUpdateClaim_NotDraftStatus_ThrowsException() {
+
+        claim.setStatus(ClaimStatus.SUBMITTED);
+
+        UpdateClaimRequest updateRequest = new UpdateClaimRequest();
+        updateRequest.setTitle("Updated Title");
+
+        when(expenseClaimRepository.findById(1L))
+                .thenReturn(Optional.of(claim));
+        when(userRepository.findByEmail("pedri.employee@claimx.com"))
+                .thenReturn(Optional.of(employee));
+
+
+        InvalidClaimStatus exception = assertThrows(
+                InvalidClaimStatus.class,
+                () -> claimService.updateClaim(1L, updateRequest, "pedri.employee@claimx.com")
+        );
+
+        assertTrue(exception.getMessage().contains("DRAFT"));
+
+        verify(expenseClaimRepository, never()).save(any(ExpenseClaim.class));
+
+        logger.info("Update claim, not draft status test successful");
     }
 
 
