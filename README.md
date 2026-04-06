@@ -23,7 +23,7 @@ Employees can create and submit claims, while managers, admins, and finance team
 - Framework - SpringBoot
 - Database - PostgreSQL
 - Security - Spring Security (JWT)
-- OMR - Spring Data JPA (Hibernate)
+- ORM - Spring Data JPA (Hibernate)
 - Build Tool - Gradle
 - API Testing - Swagger, Postman
 - Testing - JUnit, Mockito, Integration Testing
