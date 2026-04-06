@@ -296,4 +296,67 @@ public class ValidationNegativeTest {
 
     }
 
+    @Test
+    @Order(6)
+    void test_GetClaim_NotFound(){
+
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + employeeToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/claims/999",
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "no claim with the given id");
+        logger.info("wrong claim id correctly rejected" );
+
+
+    }
+
+    @Test
+    @Order(7)
+    void testGetClaim_WithoutToken() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer invalid.token.here");
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/claims/1",
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+    @Test
+    @Order(8)
+    void testGetClaim_WithExpiredToken() {
+        String expiredToken = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiRU1QTE9ZRUUiLCJzdWIiOiJwcmFzaWQuZW1wbG95ZWVAY2xhaW14LmNvbSIsImlhdCI6MTc3NTE5NTEzNiwiZXhwIjoxNzc1MTk4NzM2fQ.py-ktLmV-Ozgp_ppmE9HoVDBfbMTHDzNqKWsofAF9SM";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + expiredToken);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/claims/1",
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+
+
+
+
+
 }

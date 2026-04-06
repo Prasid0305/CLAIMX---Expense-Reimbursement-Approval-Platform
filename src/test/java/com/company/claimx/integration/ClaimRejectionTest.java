@@ -1,8 +1,9 @@
 package com.company.claimx.integration;
 
-
 import com.company.claimx.dto.request.*;
-import com.company.claimx.dto.response.*;
+import com.company.claimx.dto.response.ClaimResponse;
+import com.company.claimx.dto.response.ExpenseItemResponse;
+import com.company.claimx.dto.response.LoginResponse;
 import com.company.claimx.entity.ExpenseClaim;
 import com.company.claimx.entity.ExpenseItem;
 import com.company.claimx.enums.Category;
@@ -10,7 +11,10 @@ import com.company.claimx.enums.ClaimStatus;
 import com.company.claimx.repository.AuditLogRepository;
 import com.company.claimx.repository.ExpenseClaimRepository;
 import com.company.claimx.repository.ExpenseItemRepository;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +28,16 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class CompleteClaimWorkflowTests {
+public class ClaimRejectionTest {
 
 
-    private static final Logger logger = LoggerFactory.getLogger(CompleteClaimWorkflowTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClaimRejectionTest.class);
 
 
     @Autowired
@@ -53,7 +58,6 @@ public class CompleteClaimWorkflowTests {
     private  static String financeToken;
     private static String adminToken;
     private static Long claimId;
-    private static Long userId;
 
     @Test
     @Order(1)
@@ -216,6 +220,8 @@ public class CompleteClaimWorkflowTests {
         assertNotNull(claim.getSubmittedAt());
     }
 
+
+
     @Test
     @Order(5)
     void step5_ManagerLoginTest(){
@@ -256,19 +262,80 @@ public class CompleteClaimWorkflowTests {
 
     @Test
     @Order(6)
-    void step6_ManagerApproveClaim(){
-        ApproveClaimRequest approveClaimRequest = new ApproveClaimRequest();
-        approveClaimRequest.setComment("the claim is approve and is sent to finance department");
+    void step8_ManagerViewSubmittedClaims() {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + managerToken);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
+                "/api/manager/claims/pending",
+                HttpMethod.GET,
+                entity,
+                ClaimResponse[].class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        ClaimResponse ourClaim = Arrays.stream(response.getBody())
+                .filter(c -> c.getClaimId().equals(claimId))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(ourClaim, "Our claim should be in submitted list");
+        assertEquals(ClaimStatus.SUBMITTED, ourClaim.getStatus());
+
+        logger.info("Total submitted: {}", response.getBody().length);
+    }
+
+    @Test
+    @Order(7)
+    void step8_ManagerViewSubmittedClaimsById() {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + managerToken);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        logger.info("Manager Token in this test: [{}]", managerToken);
+        ResponseEntity<ClaimResponse> response = restTemplate.exchange(
+                "/api/manager/claims/pending/" + claimId ,
+                HttpMethod.GET,
+                entity,
+                ClaimResponse.class
+        );
+
+        logger.info("Response Status: {}", response.getStatusCode());
+        logger.info("Response Body: {}", response.getBody());
+
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Status should be 200 OK");
+
+        ClaimResponse claimResponse = response.getBody();
+        assertEquals(ClaimStatus.SUBMITTED, claimResponse.getStatus());
+
+        claimId = claimResponse.getClaimId();
+
+
+        logger.info("Claim ID: {}", claimId);
+        logger.info("Status:{}",claimResponse.getStatus());
+    }
+
+    @Test
+    @Order(8)
+    void step6_ManagerRejectsClaim(){
+        RejectClaimRequest rejectClaimRequest = new RejectClaimRequest();
+        rejectClaimRequest.setComment("the claim is rejected");
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + managerToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<ApproveClaimRequest> entity = new HttpEntity<>(approveClaimRequest, headers);
+        HttpEntity<RejectClaimRequest> entity = new HttpEntity<>(rejectClaimRequest, headers);
 
 
         ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
-                "/api/manager/claims/pending/" + claimId + "/approve",
+                "/api/manager/claims/pending/" + claimId + "/reject",
                 entity,
                 ClaimResponse.class
         );
@@ -280,8 +347,8 @@ public class CompleteClaimWorkflowTests {
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Status should be 200 OK");
 
         ClaimResponse claimResponse = response.getBody();
-        assertEquals(ClaimStatus.APPROVED, claimResponse.getStatus());
-        assertEquals("the claim is approve and is sent to finance department", claimResponse.getReviewComment());
+        assertEquals(ClaimStatus.REJECTED, claimResponse.getStatus());
+        assertEquals("the claim is rejected", claimResponse.getReviewComment());
 
         claimId = claimResponse.getClaimId();
 
@@ -292,279 +359,4 @@ public class CompleteClaimWorkflowTests {
         logger.info("review comment: {}", claimResponse.getReviewComment());
 
     }
-
-    @Test
-    @Order(7)
-    void step7_FinanceLoginTest(){
-
-
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setEmail("akash.finance@claimx.com");
-        loginRequest.setPassword("akash@123");
-
-
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
-                "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
-        );
-
-
-        logger.info("Response Status:{} ", responseEntity.getStatusCode());
-        logger.info("Response body: {}", responseEntity.getBody());
-
-
-        assertNotNull(responseEntity, "Response should not be null");
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        financeToken = responseEntity.getBody().getToken();
-
-
-
-
-        assertNotNull(financeToken);
-        logger.info("manager token :{}" ,financeToken);
-
-
-        assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
-
-
-    }
-
-
-    @Test
-    @Order(8)
-    void step8_FinanceViewsApprovedClaims() {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + financeToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
-                "/api/finance/claims/approved",
-                HttpMethod.GET,
-                entity,
-                ClaimResponse[].class
-        );
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        ClaimResponse ourClaim = Arrays.stream(response.getBody())
-                .filter(c -> c.getClaimId().equals(claimId))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(ourClaim, "Our claim should be in approved list");
-        assertEquals(ClaimStatus.APPROVED, ourClaim.getStatus());
-        assertEquals(new BigDecimal("2200.00"), ourClaim.getTotalAmount());
-
-        logger.info("Total approved: {}", response.getBody().length);
-        logger.info("Approved claim amount: {}", ourClaim.getTotalAmount());
-    }
-
-    @Test
-    @Order(9)
-    void step9_ProcessPaymentToClaim(){
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + financeToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-
-
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
-                "/api/finance/claims/" + claimId + "/paid",
-                entity,
-                ClaimResponse.class
-        );
-
-        logger.info("Response Status: {}", response.getStatusCode());
-        logger.info("Response Body: {}", response.getBody());
-
-
-        assertEquals(HttpStatus.OK, response.getStatusCode(), "Status should be 200 OK");
-
-        ClaimResponse claimResponse = response.getBody();
-        assertEquals(ClaimStatus.PAID, claimResponse.getStatus());
-
-        claimId = claimResponse.getClaimId();
-
-
-        logger.info("Claim ID: {}", claimId);
-        logger.info("Status:{}",claimResponse.getStatus());
-
-    }
-
-    @Test
-    @Order(10)
-    void step10_AdminLoginTest(){
-
-
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setEmail("admin@claimx.com");
-        loginRequest.setPassword("admin@123");
-
-
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
-                "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
-        );
-
-
-        logger.info("Response Status:{} ", responseEntity.getStatusCode());
-        logger.info("Response body: {}", responseEntity.getBody());
-
-
-        assertNotNull(responseEntity, "Response should not be null");
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        adminToken = responseEntity.getBody().getToken();
-
-
-
-
-        assertNotNull(adminToken);
-        logger.info("manager token :{}" ,adminToken);
-
-
-        assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
-
-
-    }
-
-    @Test
-    @Order(11)
-    void step11_adminViewsAllTheAuditLogs(){
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + adminToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<AuditLogResponse[]> response = restTemplate.exchange(
-                "/api/admin/audit-log",
-                HttpMethod.GET,
-                entity,
-                AuditLogResponse[].class
-        );
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        List<AuditLogResponse> ourClaimLogs = Arrays.stream(response.getBody())
-                .filter(log -> log.getClaimId() != null && log.getClaimId().equals(claimId))
-                .toList();
-
-
-        for (AuditLogResponse log : ourClaimLogs) {
-            logger.info("   - {} | {} → {} | {}",
-                    log.getAction(),
-                    log.getOldStatus(),
-                    log.getNewStatus(),
-                    log.getPerformedBy());
-        }
-    }
-
-    @Test
-    @Order(12)
-    void step12_EmployeeViewAllClaims(){
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + employeeToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
-                "/api/claims/my",
-                HttpMethod.GET,
-                entity,
-                ClaimResponse[].class
-        );
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        ClaimResponse ourClaim = Arrays.stream(response.getBody())
-                .filter(c -> c.getClaimId().equals(claimId))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(ourClaim, "Our claim should be in approved list");
-        assertEquals(new BigDecimal("2200.00"), ourClaim.getTotalAmount());
-
-        logger.info("Total claim: {}", response.getBody().length);
-
-    }
-
-    @Test
-    @Order(13)
-    void step13_FinanceGetAllPaidClaims() {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + financeToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
-                "/api/finance/claims/paid",
-                HttpMethod.GET,
-                entity,
-                ClaimResponse[].class
-        );
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        ClaimResponse ourClaim = Arrays.stream(response.getBody())
-                .filter(c -> c.getClaimId().equals(claimId))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(ourClaim, "Our claim should be in paid list");
-        assertEquals(ClaimStatus.PAID, ourClaim.getStatus());
-
-        logger.info("Total approved: {}", response.getBody().length);
-        logger.info("Approved claim amount: {}", ourClaim.getTotalAmount());
-    }
-
-    @Test
-    @Order(14)
-    void step14_AdminViewAllClaims(){
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + adminToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
-                "/api/admin/claims",
-                HttpMethod.GET,
-                entity,
-                ClaimResponse[].class
-        );
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        ClaimResponse ourClaim = Arrays.stream(response.getBody())
-                .filter(c -> c.getClaimId().equals(claimId))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(ourClaim);
-        assertEquals(new BigDecimal("2200.00"), ourClaim.getTotalAmount());
-
-        logger.info("Total claim: {}", response.getBody().length);
-
-    }
-
-
-
-
-
-
-
-
-
-
-
 }
