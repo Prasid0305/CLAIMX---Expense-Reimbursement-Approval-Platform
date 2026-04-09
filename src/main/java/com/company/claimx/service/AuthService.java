@@ -66,10 +66,8 @@ public class AuthService {
 
 
         }catch (BadCredentialsException e){
-            throw new BadCredentialsException(ErrorMessageConstants.INVALID_CREDIENTIALS);  //i will add a custom exception
+            throw new BadCredentialsException(ErrorMessageConstants.INVALID_CREDIENTIALS);
         }
-
-
     }
 
 }

@@ -148,7 +148,7 @@ public class ManagerService {
 
     /**
      * to get the pending claim of a manager by id
-     * @param claimId - to acccess the particular claim
+     * @param claimId - to access the particular claim
      * @param userEmail - to authorize the email.
      * @return - claim response for the requested claim
      * @throws ClaimNotFoundException - if the claim is not found for the particular claim
@@ -171,7 +171,7 @@ public class ManagerService {
 
     /**
      * Checks whether the given user is allowed to access the claim.
-     * Claim owner, current manager, ADMIN, FINANCE are allowed to access the claim
+     * Claim's owner, current manager, ADMIN, FINANCE are allowed to access the claim
      * @param claim - the claim being accessed
      * @param user - the user requesting access
      * @throws  UnauthorizedAccessException -  if access is not allowed

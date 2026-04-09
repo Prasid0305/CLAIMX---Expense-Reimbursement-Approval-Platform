@@ -73,7 +73,7 @@ public class FinanceService {
     @Transactional
     private ClaimResponse mapToResponse(ExpenseClaim savedClaim) {
 
-        // Get manager dynamically
+
         String managerName = null;
         Long managerId = null;
 

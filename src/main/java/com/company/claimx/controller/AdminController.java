@@ -8,6 +8,7 @@ import com.company.claimx.dto.response.UserResponse;
 import com.company.claimx.dto.response.UserWithClaimResponse;
 import com.company.claimx.entity.User;
 import com.company.claimx.service.AdminServices;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/admin")
-@Tag(name = "Admin operations", description = "Admin operation endpoints")
+@Tag(name = "Admin operations", description = "Admin operation endpoints. To get all the users, claims, audit logs, and user info along with the claim information.")
 
 public class AdminController {
 
@@ -39,6 +40,7 @@ public class AdminController {
      *
      * @return list of all users
      */
+    @Operation(summary = "Retriever all the users",description = "Admin gets all the users with their details")
     @GetMapping("/users")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<List<UserResponse>> getAllUsers(){
@@ -55,6 +57,7 @@ public class AdminController {
      *
      * @return list of all claims
      */
+    @Operation(summary = "Retriever all the claims of the users",description = "Admin gets all the users with their details")
     @GetMapping("/claims")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<List<ClaimResponse>> getAllClaims(){
@@ -73,6 +76,7 @@ public class AdminController {
      *
      * @return list of audit logs
      */
+    @Operation(summary = "Retriever all the audit logs",description = "Admin gets all the log trails details")
     @GetMapping("/audit-log")
     @Authenticated(roles = {"ADMIN"})
 
@@ -92,6 +96,7 @@ public class AdminController {
      * @param userId - id of the user
      * @return user details with claims
      */
+    @Operation(summary = "Retriever all the user with the claims",description = "Admin gets the users with all claims which belongs to the particular user")
     @GetMapping("/users/{userId}")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<UserWithClaimResponse> getUserWithClaims(@Parameter @PathVariable  Long userId){

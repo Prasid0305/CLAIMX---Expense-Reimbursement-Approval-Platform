@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
  * entity representing an expense claim
  */
 @Entity
-@Table(name="expense_claims")
+@Table(name="expense_claims", indexes = {
+        @Index(name = "idx_employee_claim", columnList = "employee_id, claim_id"),
+        @Index(name = "idx_claim_status", columnList = "claim_id, status")
+})
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

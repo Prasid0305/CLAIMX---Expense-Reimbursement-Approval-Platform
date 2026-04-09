@@ -10,6 +10,7 @@ import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.entity.ExpenseClaim;
 import com.company.claimx.enums.ClaimStatus;
 import com.company.claimx.service.ClaimService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/claims")
-@Tag(name = "Employee claims", description = "claim management for the employees")
+@Tag(name = "Employee claims", description = "Claim management for the employees")
 public class ClaimController {
 
     @Autowired
@@ -40,6 +41,7 @@ public class ClaimController {
      * @param createClaimRequest - claimRequest containing the title for creating the claim
      * @return - claim response which contains all the details of the claim such as id, employee, total amount, createdAt time, etc.
      */
+    @Operation(summary = "Create claim",description = "User creates the claim, requires title and returns the claim body")
     @PostMapping
     @Authenticated
     public ResponseEntity<ClaimResponse> createClaim(@Valid @RequestBody CreateClaimRequest createClaimRequest){
@@ -59,6 +61,7 @@ public class ClaimController {
      * @param claimId - claim id
      * @return claim response with the details of the particular claim
      */
+    @Operation(summary = "Retrieve claim by id",description = "User retrieve the claim with the claim id ")
     @GetMapping("/{claimId}")
     @Authenticated
     public ResponseEntity<ClaimResponse> getClaimById(@PathVariable Long claimId){
@@ -75,6 +78,7 @@ public class ClaimController {
      * @param claimId - id of the submitting claim
      * @return - claim details for the submitted claim
      */
+    @Operation(summary = "Submit claim",description = "User submits the claim")
     @PostMapping("/{claimId}/submit")
     @Authenticated
     public ResponseEntity<ClaimResponse> submitClaim(@PathVariable Long claimId){
@@ -90,6 +94,7 @@ public class ClaimController {
      * endpoint to get all the claims of a particular employee
      * @return list of claims
      */
+    @Operation(summary = "Retrieve all the claims",description = "User retrieve all the claim of the user")
     @GetMapping("/my")
     @Authenticated
     public ResponseEntity<List<ClaimResponse>> getAllMyClaims() {
@@ -108,6 +113,7 @@ public class ClaimController {
      * @param status - status of the claim
      * @return - claims containing the requested status
      */
+    @Operation(summary = "Retrieve claims filtered by status",description = "User retrieve claims filtered by status")
     @GetMapping("/status/{status}")
     @Authenticated
     public ResponseEntity<List<ClaimResponse>> getMyClaimsByStatus(@PathVariable ClaimStatus status) {
@@ -127,7 +133,8 @@ public class ClaimController {
      * @param claimId - id of the claim
      * @return - success status code
      */
-    @DeleteMapping("/delete/{claimId}")
+    @Operation(summary = "Delete the claim",description = "User deletes the claim with the claim id ")
+    @DeleteMapping("/{claimId}")
     @Authenticated
     public ResponseEntity<Void> deleteClaim(@PathVariable Long claimId){
         String userEmail = AuthenticationContext.getUserEmail();
@@ -142,7 +149,8 @@ public class ClaimController {
      * @param updateClaimRequest - claim request to updating the claim details
      * @return claim with the updated details
      */
-    @PutMapping("/update/{claimId}")
+    @Operation(summary = "Update the claim",description = "User updates the claim")
+    @PutMapping("/{claimId}")
     @Authenticated
     public ResponseEntity<ClaimResponse> updateClaimTitle(@PathVariable Long claimId, @Valid @RequestBody UpdateClaimRequest updateClaimRequest){
 

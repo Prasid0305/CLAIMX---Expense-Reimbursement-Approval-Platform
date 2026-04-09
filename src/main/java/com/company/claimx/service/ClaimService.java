@@ -18,6 +18,8 @@ import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
 import com.company.claimx.repository.*;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +52,8 @@ public class ClaimService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(ClaimService.class);
+
 
     /**
      * creates a new claim in the DRAFT status
@@ -63,10 +67,9 @@ public class ClaimService {
         User employee = userRepository.findByEmail(userEmail)
                 .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_NOT_FOUND));
 
-        EmployeeManager relationship = employeeManagerRepository.findByEmployee(employee)
-                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_MANAGER_NOT_FOUND));
-
-       User manager = relationship.getManager();
+        if (!employeeManagerRepository.existsByEmployee(employee)) {
+            throw new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_MANAGER_NOT_FOUND);
+        }
 
 
 
@@ -266,7 +269,7 @@ public class ClaimService {
                 savedClaim,
                 user,
                 AuditActions.CLAIM_SUBMITTED.getValue(),
-                claim.getStatus().name(),
+                oldStatus,
                 String.valueOf(ClaimStatus.SUBMITTED));
 
 
@@ -349,7 +352,7 @@ public class ClaimService {
 
     /**
      * update the claim with the claim Id
-     * @param claimId - to access the claim for deletion
+     * @param claimId - to access the claim for updating
      * @param updateClaimRequest - to get the claim updating data
      * @param userEmail - to check the authorization
      * @return the ClaimResponse with the updated data

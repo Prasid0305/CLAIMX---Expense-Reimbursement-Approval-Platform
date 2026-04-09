@@ -3,8 +3,7 @@ package com.company.claimx.context;
 /**
  * ThreadLocal storage for authenticated user information.
  * Each HTTP request runs in its own thread, so this is thread-safe.
- * The AuthenticationAspect populates this context before each method,
- * and controllers can retrieve user info from here.
+ * The AuthenticationAspect populates this context before each method and controllers can retrieve user info from here.
  * Usage in controllers:
  * String email = AuthenticationContext.getUserEmail();
  * String role = AuthenticationContext.getUserRole();

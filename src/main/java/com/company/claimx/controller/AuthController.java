@@ -32,7 +32,7 @@ public class AuthController {
      * @return - jwt token, email and role
      * @throws IllegalAccessException - if the login request is wrong the  illegal access exception is called
      */
-    @Operation(summary = "user login",description = "authenticate the user and get jwt token to access the endpoints")
+    @Operation(summary = "User login",description = "authenticate the user and get jwt token to access the endpoints")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) throws IllegalAccessException {
         LoginResponse response = authService.login(loginRequest);

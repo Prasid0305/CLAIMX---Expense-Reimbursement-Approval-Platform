@@ -9,6 +9,7 @@ import com.company.claimx.dto.request.UpdateClaimRequest;
 import com.company.claimx.dto.request.UpdateExpenseItemRequest;
 import com.company.claimx.dto.response.ExpenseItemResponse;
 import com.company.claimx.service.ExpenseItemService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/claims/{claimId}/items")
-@Tag(name = "Employee expense items", description = "manage expense items within claims")
+@Tag(name = "Employee expense items", description = "Manage expense items within claims")
 public class ExpenseItemController {
 
     @Autowired
@@ -39,6 +40,7 @@ public class ExpenseItemController {
      * @param addExpenseItemRequest - expense item request
      * @return - expense item details
      */
+    @Operation(summary = "Add Item to the claim",description = "User adds the item to the claim")
     @PostMapping
     @Authenticated
     public ResponseEntity<ExpenseItemResponse> addItem(@PathVariable Long claimId, @Valid @RequestBody AddExpenseItemRequest addExpenseItemRequest){
@@ -55,6 +57,7 @@ public class ExpenseItemController {
      * @param claimId - id of the claim
      * @return
      */
+    @Operation(summary = "Get the item by id",description = "User retrieves the item from the claim")
     @GetMapping
     @Authenticated
     public ResponseEntity<List<ExpenseItemResponse>> getItems(@PathVariable Long claimId) {
@@ -72,7 +75,8 @@ public class ExpenseItemController {
      * @param itemId - id of the item
      * @return - success code
      */
-    @DeleteMapping("/delete/{itemId}")
+    @Operation(summary = "Delete the item",description = "User deletes the item of a claim")
+    @DeleteMapping("/{itemId}")
     @Authenticated
     public ResponseEntity<Void> deleteItem(@PathVariable Long claimId, @PathVariable Long itemId){
 
@@ -89,7 +93,8 @@ public class ExpenseItemController {
      * @param request - expense item request
      * @return - updated item response
      */
-    @PutMapping("/update/{itemId}")
+    @Operation(summary = "Update the item",description = "User updates the item")
+    @PutMapping("/{itemId}")
     @Authenticated
     public ResponseEntity<ExpenseItemResponse> updateExpenseItem(@PathVariable Long claimId, @PathVariable Long itemId, @Valid @RequestBody UpdateExpenseItemRequest request){
 
@@ -106,6 +111,7 @@ public class ExpenseItemController {
      * @param request - list of the items
      * @return - all the items that were added
      */
+    @Operation(summary = "Add multiple items to the claim",description = "User adds multiple items to the claim at once.")
     @PostMapping("/multipleItems")
     @Authenticated
     public ResponseEntity<List<ExpenseItemResponse>> addMultipleItem(@PathVariable Long claimId, @Valid @RequestBody  AddMultipleItemRequest request){

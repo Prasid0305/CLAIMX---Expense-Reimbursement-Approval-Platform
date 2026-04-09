@@ -54,6 +54,7 @@ public class CompleteClaimWorkflowTests {
     private static String adminToken;
     private static Long claimId;
     private static Long userId;
+    private static String status;
 
     @Test
     @Order(1)
@@ -529,7 +530,7 @@ public class CompleteClaimWorkflowTests {
 
     @Test
     @Order(14)
-    void step14_AdminViewAllClaims(){
+    void step14_AdminViewAllClaims() {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + adminToken);
@@ -556,8 +557,6 @@ public class CompleteClaimWorkflowTests {
         logger.info("Total claim: {}", response.getBody().length);
 
     }
-
-
 
 
 

@@ -4,6 +4,7 @@ import com.company.claimx.annotation.Authenticated;
 import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.service.FinanceService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/finance/claims")
-@Tag(name = "finance approvals", description = "pay the approved claims")
+@Tag(name = "Finance review and approvals", description = "Pay the approved claims, get all the paid claims")
 public class FinanceController {
 
     @Autowired
@@ -29,6 +30,7 @@ public class FinanceController {
      * endpoint to get the approved claims
      * @return - claim response, list of all the approved claims
      */
+    @Operation(summary = "Get all the approved claims",description = "User retrieves all the claims that are approved")
     @GetMapping("/approved")
     @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<List<ClaimResponse>> getApprovedClaim(){
@@ -46,6 +48,7 @@ public class FinanceController {
      * @param claimId - id of the claim
      * @return - claim response of the paid claim
      */
+    @Operation(summary = "Pay the approved claim",description = "User pays the approved claim")
     @PostMapping("/{claimId}/paid")
     @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<ClaimResponse> payClaims(@PathVariable Long claimId){
@@ -61,6 +64,7 @@ public class FinanceController {
      * endpoint to get all the paid claim
      * @return - claim response list of the paid claim
      */
+    @Operation(summary = "Get all the paid claims",description = "User retrieves all the claims that are paid.")
     @GetMapping("/paid")
     @Authenticated(roles = {"FINANCE"})
     public ResponseEntity<List<ClaimResponse>> getAllPaidClaim(){
