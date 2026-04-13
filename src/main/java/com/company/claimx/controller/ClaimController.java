@@ -3,9 +3,11 @@ package com.company.claimx.controller;
 
 import com.company.claimx.annotation.Authenticated;
 import com.company.claimx.config.SecurityConfig;
+import com.company.claimx.constants.MessageResponseConstants;
 import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.request.CreateClaimRequest;
 import com.company.claimx.dto.request.UpdateClaimRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.entity.ExpenseClaim;
 import com.company.claimx.enums.ClaimStatus;
@@ -44,13 +46,14 @@ public class ClaimController {
     @Operation(summary = "Create claim",description = "User creates the claim, requires title and returns the claim body")
     @PostMapping
     @Authenticated
-    public ResponseEntity<ClaimResponse> createClaim(@Valid @RequestBody CreateClaimRequest createClaimRequest){
+    public ResponseEntity<ApiResponse<ClaimResponse>> createClaim(@Valid @RequestBody CreateClaimRequest createClaimRequest){
 
 
         String email = AuthenticationContext.getUserEmail();
         ClaimResponse claimResponse = claimService.createClaim(createClaimRequest, email);
 
-        return new ResponseEntity<>(claimResponse, HttpStatus.CREATED);
+//        return new ResponseEntity<>(claimResponse, HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success(claimResponse, MessageResponseConstants.CLAIM_CREATED),HttpStatus.CREATED);
 
 
 
@@ -64,13 +67,13 @@ public class ClaimController {
     @Operation(summary = "Retrieve claim by id",description = "User retrieve the claim with the claim id ")
     @GetMapping("/{claimId}")
     @Authenticated
-    public ResponseEntity<ClaimResponse> getClaimById(@PathVariable Long claimId){
+    public ResponseEntity<ApiResponse<ClaimResponse>> getClaimById(@PathVariable Long claimId){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = claimService.getClaimById(claimId, userEmail);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response,MessageResponseConstants.CLAIM_RETRIEVED));
     }
 
     /**
@@ -81,13 +84,13 @@ public class ClaimController {
     @Operation(summary = "Submit claim",description = "User submits the claim")
     @PostMapping("/{claimId}/submit")
     @Authenticated
-    public ResponseEntity<ClaimResponse> submitClaim(@PathVariable Long claimId){
+    public ResponseEntity<ApiResponse<ClaimResponse>> submitClaim(@PathVariable Long claimId){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse claimResponse = claimService.submitClaim(claimId, userEmail);
 
-        return ResponseEntity.ok(claimResponse);
+        return ResponseEntity.ok(ApiResponse.success(claimResponse,MessageResponseConstants.CLAIM_SUBMITTED));
     }
 
     /**
@@ -97,7 +100,7 @@ public class ClaimController {
     @Operation(summary = "Retrieve all the claims",description = "User retrieve all the claim of the user")
     @GetMapping("/my")
     @Authenticated
-    public ResponseEntity<List<ClaimResponse>> getAllMyClaims() {
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getAllMyClaims() {
 
         String userEmail = AuthenticationContext.getUserEmail();
 
@@ -105,7 +108,7 @@ public class ClaimController {
         List<ClaimResponse> claims = claimService.getAllMyClaims(userEmail);
 
 
-        return ResponseEntity.ok(claims);
+        return ResponseEntity.ok(ApiResponse.success(claims,MessageResponseConstants.CLAIMS_RETRIEVED));
     }
 
     /**
@@ -116,7 +119,7 @@ public class ClaimController {
     @Operation(summary = "Retrieve claims filtered by status",description = "User retrieve claims filtered by status")
     @GetMapping("/status/{status}")
     @Authenticated
-    public ResponseEntity<List<ClaimResponse>> getMyClaimsByStatus(@PathVariable ClaimStatus status) {
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getMyClaimsByStatus(@PathVariable ClaimStatus status) {
 
 
         String userEmail = AuthenticationContext.getUserEmail();
@@ -125,7 +128,7 @@ public class ClaimController {
         List<ClaimResponse> claims = claimService.getAllMyClaimsByStatus(userEmail, status);
 
 
-        return ResponseEntity.ok(claims);
+        return ResponseEntity.ok(ApiResponse.success(claims,MessageResponseConstants.CLAIMS_RETRIEVED_STATUS));
     }
 
     /**
@@ -136,11 +139,11 @@ public class ClaimController {
     @Operation(summary = "Delete the claim",description = "User deletes the claim with the claim id ")
     @DeleteMapping("/{claimId}")
     @Authenticated
-    public ResponseEntity<Void> deleteClaim(@PathVariable Long claimId){
+    public ResponseEntity<ApiResponse<Void>> deleteClaim(@PathVariable Long claimId){
         String userEmail = AuthenticationContext.getUserEmail();
         claimService.deleteClaim(claimId, userEmail);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null,MessageResponseConstants.CLAIM_DELETED));
     }
 
     /**
@@ -152,13 +155,13 @@ public class ClaimController {
     @Operation(summary = "Update the claim",description = "User updates the claim")
     @PutMapping("/{claimId}")
     @Authenticated
-    public ResponseEntity<ClaimResponse> updateClaimTitle(@PathVariable Long claimId, @Valid @RequestBody UpdateClaimRequest updateClaimRequest){
+    public ResponseEntity<ApiResponse<ClaimResponse>> updateClaimTitle(@PathVariable Long claimId, @Valid @RequestBody UpdateClaimRequest updateClaimRequest){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = claimService.updateClaim(claimId, updateClaimRequest,userEmail);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response,MessageResponseConstants.CLAIM_UPDATED));
     }
 
 }

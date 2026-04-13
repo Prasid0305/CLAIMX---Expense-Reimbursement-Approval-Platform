@@ -1,6 +1,8 @@
 package com.company.claimx.controller;
 
+import com.company.claimx.constants.MessageResponseConstants;
 import com.company.claimx.dto.request.LoginRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.LoginResponse;
 import com.company.claimx.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,8 +36,8 @@ public class AuthController {
      */
     @Operation(summary = "User login",description = "authenticate the user and get jwt token to access the endpoints")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) throws IllegalAccessException {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) throws IllegalAccessException {
         LoginResponse response = authService.login(loginRequest);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(ApiResponse.success(response, MessageResponseConstants.LOGIN), HttpStatus.OK);
     }
 }

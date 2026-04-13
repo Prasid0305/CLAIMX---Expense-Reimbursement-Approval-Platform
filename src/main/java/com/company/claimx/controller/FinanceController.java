@@ -1,7 +1,9 @@
 package com.company.claimx.controller;
 
 import com.company.claimx.annotation.Authenticated;
+import com.company.claimx.constants.MessageResponseConstants;
 import com.company.claimx.context.AuthenticationContext;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.service.FinanceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +35,14 @@ public class FinanceController {
     @Operation(summary = "Get all the approved claims",description = "User retrieves all the claims that are approved")
     @GetMapping("/approved")
     @Authenticated(roles = {"FINANCE"})
-    public ResponseEntity<List<ClaimResponse>> getApprovedClaim(){
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getApprovedClaim(){
 
 
         String financeUser = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claimResponseList = financeService.getApprovedClaim(financeUser);
 
-        return ResponseEntity.ok(claimResponseList);
+        return ResponseEntity.ok(ApiResponse.success(claimResponseList, MessageResponseConstants.APPROVED_CLAIMS_RETRIEVED));
     }
 
     /**
@@ -51,13 +53,13 @@ public class FinanceController {
     @Operation(summary = "Pay the approved claim",description = "User pays the approved claim")
     @PostMapping("/{claimId}/paid")
     @Authenticated(roles = {"FINANCE"})
-    public ResponseEntity<ClaimResponse> payClaims(@PathVariable Long claimId){
+    public ResponseEntity<ApiResponse<ClaimResponse>> payClaims(@PathVariable Long claimId){
 
         String financeUser = AuthenticationContext.getUserEmail();
 
         ClaimResponse claimResponse  = financeService.payClaims(claimId, financeUser );
 
-        return ResponseEntity.ok(claimResponse);
+        return ResponseEntity.ok(ApiResponse.success(claimResponse, MessageResponseConstants.CLAIM_PAID));
     }
 
     /**
@@ -67,14 +69,14 @@ public class FinanceController {
     @Operation(summary = "Get all the paid claims",description = "User retrieves all the claims that are paid.")
     @GetMapping("/paid")
     @Authenticated(roles = {"FINANCE"})
-    public ResponseEntity<List<ClaimResponse>> getAllPaidClaim(){
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getAllPaidClaim(){
 
 
         String financeUser = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claimResponseList = financeService.getAllPaidClaim(financeUser);
 
-        return ResponseEntity.ok(claimResponseList);
+        return ResponseEntity.ok(ApiResponse.success(claimResponseList, MessageResponseConstants.PAID_CLAIMS_RETRIEVED));
     }
 
 

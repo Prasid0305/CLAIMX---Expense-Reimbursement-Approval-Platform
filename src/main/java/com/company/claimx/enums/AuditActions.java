@@ -4,7 +4,7 @@ public enum AuditActions {
     CLAIM_CREATED("claim created"),
     CLAIM_SUBMITTED("claim submitted"),
     CLAIM_REJECTED("claim rejected"),
-    CLAIM_APPROVED("claim rejected"),
+    CLAIM_APPROVED("claim approved"),
     CLAIM_UPDATED("claim updated"),
     CLAIM_DELETED("claim deleted"),
     CLAIM_PAID("claim paid");

@@ -1,9 +1,11 @@
 package com.company.claimx.controller;
 
 import com.company.claimx.annotation.Authenticated;
+import com.company.claimx.constants.MessageResponseConstants;
 import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.request.ApproveClaimRequest;
 import com.company.claimx.dto.request.RejectClaimRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.service.ClaimService;
 import com.company.claimx.service.ManagerService;
@@ -38,13 +40,13 @@ public class ManagerController {
     @Operation(summary = "Get all the submitted claims",description = "User retrieves all the belonging claims.")
     @GetMapping("/pending")
     @Authenticated(roles = {"MANAGER"})
-    public ResponseEntity<List<ClaimResponse>> getPendingClaims(){
+    public ResponseEntity<ApiResponse<List<ClaimResponse>>> getPendingClaims(){
 
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         List<ClaimResponse> claims = managerService.getPendingClaims(userEmail);
-        return ResponseEntity.ok(claims);
+        return ResponseEntity.ok(ApiResponse.success(claims, MessageResponseConstants.SUBMITTED_CLAIMS_RETRIEVED));
     }
 
     /**
@@ -55,14 +57,14 @@ public class ManagerController {
     @Operation(summary = "Get all the submitted claims by id",description = "User retrieves the belonging claims  by id.")
     @GetMapping("/pending/{claimId}")
     @Authenticated(roles = {"MANAGER"})
-    public ResponseEntity<ClaimResponse> getPendingClaimById(@PathVariable Long claimId){
+    public ResponseEntity<ApiResponse<ClaimResponse>> getPendingClaimById(@PathVariable Long claimId){
 
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.getPendingClaimById(claimId, userEmail);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response,MessageResponseConstants.CLAIM_RETRIEVED));
     }
 
     /**
@@ -74,14 +76,14 @@ public class ManagerController {
     @Operation(summary = "Approve the submitted claim",description = "User approves the claims")
     @PostMapping("/pending/{claimId}/approve")
     @Authenticated(roles = {"MANAGER"})
-    public ResponseEntity<ClaimResponse> approvePendingClaimById(@PathVariable Long claimId, @Valid @RequestBody ApproveClaimRequest approveClaimRequest){
+    public ResponseEntity<ApiResponse<ClaimResponse>> approvePendingClaimById(@PathVariable Long claimId, @Valid @RequestBody ApproveClaimRequest approveClaimRequest){
 
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.approvePendingClaimById(claimId, approveClaimRequest, userEmail);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response, MessageResponseConstants.CLAIM_APPROVED));
     }
 
     /**
@@ -93,12 +95,12 @@ public class ManagerController {
     @Operation(summary = "Reject the submitted claim",description = "User reject the claims")
     @PostMapping("/pending/{claimId}/reject")
     @Authenticated(roles = {"MANAGER"})
-    public ResponseEntity<ClaimResponse> rejectPendingClaimById(@PathVariable Long claimId, @Valid @RequestBody RejectClaimRequest rejectClaimRequest){
+    public ResponseEntity<ApiResponse<ClaimResponse>> rejectPendingClaimById(@PathVariable Long claimId, @Valid @RequestBody RejectClaimRequest rejectClaimRequest){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ClaimResponse response = managerService.rejectPendingClaimById(claimId, rejectClaimRequest, userEmail);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response,MessageResponseConstants.CLAIM_REJECTED));
     }
 }

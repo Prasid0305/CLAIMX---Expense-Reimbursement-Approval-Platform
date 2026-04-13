@@ -2,11 +2,13 @@ package com.company.claimx.controller;
 
 
 import com.company.claimx.annotation.Authenticated;
+import com.company.claimx.constants.MessageResponseConstants;
 import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.request.AddExpenseItemRequest;
 import com.company.claimx.dto.request.AddMultipleItemRequest;
 import com.company.claimx.dto.request.UpdateClaimRequest;
 import com.company.claimx.dto.request.UpdateExpenseItemRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ExpenseItemResponse;
 import com.company.claimx.service.ExpenseItemService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,13 +45,13 @@ public class ExpenseItemController {
     @Operation(summary = "Add Item to the claim",description = "User adds the item to the claim")
     @PostMapping
     @Authenticated
-    public ResponseEntity<ExpenseItemResponse> addItem(@PathVariable Long claimId, @Valid @RequestBody AddExpenseItemRequest addExpenseItemRequest){
+    public ResponseEntity<ApiResponse<ExpenseItemResponse>> addItem(@PathVariable Long claimId, @Valid @RequestBody AddExpenseItemRequest addExpenseItemRequest){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ExpenseItemResponse expenseItemResponse = expenseItemService.addItem(claimId, addExpenseItemRequest, userEmail);
 
-        return new ResponseEntity<>(expenseItemResponse, HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success(expenseItemResponse, MessageResponseConstants.ITEM_ADDED), HttpStatus.CREATED);
     }
 
     /**
@@ -60,13 +62,13 @@ public class ExpenseItemController {
     @Operation(summary = "Get the item by id",description = "User retrieves the item from the claim")
     @GetMapping
     @Authenticated
-    public ResponseEntity<List<ExpenseItemResponse>> getItems(@PathVariable Long claimId) {
+    public ResponseEntity<ApiResponse<List<ExpenseItemResponse>>> getItems(@PathVariable Long claimId) {
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         List<ExpenseItemResponse> items = expenseItemService.getItemByClaim(claimId, userEmail);
 
-        return ResponseEntity.ok(items);
+        return ResponseEntity.ok(ApiResponse.success(items,MessageResponseConstants.ITEM_RETRIEVED));
     }
 
     /**
@@ -78,12 +80,12 @@ public class ExpenseItemController {
     @Operation(summary = "Delete the item",description = "User deletes the item of a claim")
     @DeleteMapping("/{itemId}")
     @Authenticated
-    public ResponseEntity<Void> deleteItem(@PathVariable Long claimId, @PathVariable Long itemId){
+    public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable Long claimId, @PathVariable Long itemId){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         expenseItemService.deleteItem(claimId, itemId, userEmail );
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null,MessageResponseConstants.ITEM_DELETED));
     }
 
     /**
@@ -96,13 +98,13 @@ public class ExpenseItemController {
     @Operation(summary = "Update the item",description = "User updates the item")
     @PutMapping("/{itemId}")
     @Authenticated
-    public ResponseEntity<ExpenseItemResponse> updateExpenseItem(@PathVariable Long claimId, @PathVariable Long itemId, @Valid @RequestBody UpdateExpenseItemRequest request){
+    public ResponseEntity<ApiResponse<ExpenseItemResponse>> updateExpenseItem(@PathVariable Long claimId, @PathVariable Long itemId, @Valid @RequestBody UpdateExpenseItemRequest request){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         ExpenseItemResponse expenseItemResponse= expenseItemService.updateExpenseItem(claimId, itemId, request, userEmail);
 
-        return ResponseEntity.ok(expenseItemResponse);
+        return ResponseEntity.ok(ApiResponse.success(expenseItemResponse,MessageResponseConstants.ITEM_UPDATED));
     }
 
     /**
@@ -114,12 +116,12 @@ public class ExpenseItemController {
     @Operation(summary = "Add multiple items to the claim",description = "User adds multiple items to the claim at once.")
     @PostMapping("/multipleItems")
     @Authenticated
-    public ResponseEntity<List<ExpenseItemResponse>> addMultipleItem(@PathVariable Long claimId, @Valid @RequestBody  AddMultipleItemRequest request){
+    public ResponseEntity<ApiResponse<List<ExpenseItemResponse>>> addMultipleItem(@PathVariable Long claimId, @Valid @RequestBody  AddMultipleItemRequest request){
 
         String userEmail = AuthenticationContext.getUserEmail();
 
         List<ExpenseItemResponse> expenseItemResponse = expenseItemService.addMultipleItems(claimId, request, userEmail);
 
-        return new ResponseEntity<>(expenseItemResponse, HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success(expenseItemResponse,MessageResponseConstants.ITEMS_ADDED), HttpStatus.CREATED);
     }
 }
