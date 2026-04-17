@@ -8,6 +8,8 @@ import com.company.claimx.exception.UserInactiveException;
 import com.company.claimx.exception.UserNotFoundException;
 import com.company.claimx.repository.UserRepository;
 import com.company.claimx.config.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -42,7 +45,10 @@ public class AuthService {
      */
     public LoginResponse login(LoginRequest loginRequest)  {
 
+        logger.info("Login attempt for user: {}", loginRequest.getEmail());
+
         try{
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest
@@ -58,6 +64,10 @@ public class AuthService {
             }
             String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
+
+            logger.info("Login successful: user={}, role={}", user.getEmail(), user.getRole());
+
+
             return new LoginResponse(
                     token,
                     user.getEmail(),
@@ -66,8 +76,15 @@ public class AuthService {
 
 
         }catch (BadCredentialsException e){
+
+            logger.error("Invalid credentials for user: {}", loginRequest.getEmail());
+
             throw new BadCredentialsException(ErrorMessageConstants.INVALID_CREDIENTIALS);
         }
     }
 
 }
+
+
+
+

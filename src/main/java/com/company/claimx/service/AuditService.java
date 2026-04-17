@@ -5,6 +5,8 @@ import com.company.claimx.entity.ExpenseClaim;
 import com.company.claimx.entity.User;
 import com.company.claimx.repository.AuditLogRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import java.util.List;
 @Service
 public class AuditService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuditService.class);
     @Autowired
     AuditLogRepository auditLogRepository;
 
@@ -47,6 +50,8 @@ public class AuditService {
      * @return list of all the logs in descending time
      */
     public List<AuditLog> getAllLogs() {
+
+        logger.info("Retrieving all the logs ");
         return auditLogRepository.findAllByOrderByTimestampDesc();
     }
 

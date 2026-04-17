@@ -19,43 +19,43 @@ import java.util.List;
  */
 public class ClaimResponse {
 
-    private Long claimId;//
+    private Long claimId;
 
-    private String claimNumber;//
+    private String claimNumber;
 
 
-    private Long employeeId;//
-    private String employeeCode;//
+    private Long employeeId;
+    private String employeeCode;
     private String employeeName;
 
 
 
-    private Long managerId;//
-    private String managerName;//
+    private Long managerId;
+    private String managerName;
 
 
-    private String title;//
+    private String title;
 
 
-    private BigDecimal totalAmount;//
+    private BigDecimal totalAmount;
 
 
-    private ClaimStatus status;//
-
-
-
-    private LocalDateTime reviewedDate;//
-
-
-    private String reviewComment;//
+    private ClaimStatus status;
 
 
 
-    private LocalDateTime createdAt;//
+    private LocalDateTime reviewedDate;
+
+
+    private String reviewComment;
 
 
 
-    private LocalDateTime submittedAt;//
+    private LocalDateTime createdAt;
+
+
+
+    private LocalDateTime submittedAt;
 
     private List<ExpenseItemResponse> items;
 

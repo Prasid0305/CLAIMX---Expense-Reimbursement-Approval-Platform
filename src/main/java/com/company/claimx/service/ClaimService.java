@@ -16,6 +16,7 @@ import com.company.claimx.exception.ClaimNotFoundException;
 import com.company.claimx.exception.InvalidClaimStatus;
 import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.*;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -52,6 +53,9 @@ public class ClaimService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
+    @Autowired
+    private ClaimMapper claimMapper;
+
     private static final Logger logger = LoggerFactory.getLogger(ClaimService.class);
 
 
@@ -64,10 +68,12 @@ public class ClaimService {
      */
     @Transactional
     public ClaimResponse createClaim(CreateClaimRequest createClaimRequest, String userEmail){
+        logger.info("Creating claim for user: {}",userEmail);
         User employee = userRepository.findByEmail(userEmail)
                 .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_NOT_FOUND));
 
         if (!employeeManagerRepository.existsByEmployee(employee)) {
+            logger.error("Manager not found for employee: {}", userEmail);
             throw new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_MANAGER_NOT_FOUND);
         }
 
@@ -94,76 +100,12 @@ public class ClaimService {
                 null,
                 String.valueOf(ClaimStatus.DRAFT));
 
-        return mapToResponse(savedClaim);
+
+        logger.info("Claim created ");
+        return claimMapper.toClaimResponse(savedClaim);
     }
 
-    /**
-     * maps the ExpenseClaim to a ClaimResponse Dto
-     * If savedClaim is approved/rejected, use the approver's name otherwise, get current manager from employee_manager table
-     * @param savedClaim - the claim that is mapped
-     * @return the mapped ClaimResponse
-     */
-    private ClaimResponse mapToResponse(ExpenseClaim savedClaim) {
 
-
-        String managerName = null;
-        Long managerId = null;
-
-
-        if (savedClaim.getApprovedBy() != null) {
-            managerName = savedClaim.getApprovedByName();
-            managerId = savedClaim.getApprovedBy().getId();
-        } else {
-
-            EmployeeManager empMgr = employeeManagerRepository.findByEmployee(savedClaim.getEmployee())
-                    .orElse(null);
-
-            if (empMgr != null && empMgr.getManager() != null) {
-                managerName = empMgr.getManager().getName();
-                managerId = empMgr.getManager().getId();
-            }
-        }
-        List<ExpenseItem> itemList = expenseItemRepository.findByClaimClaimId(savedClaim.getClaimId());
-
-        List<ExpenseItemResponse> expenseItemResponseList = itemList.stream()
-                .map(this::mapItemToResponse)
-                .collect(Collectors.toUnmodifiableList());
-
-        return ClaimResponse.builder()
-                .claimId(savedClaim.getClaimId())
-                .claimNumber(savedClaim.getClaimNumber())
-                .title(savedClaim.getTitle())
-                .totalAmount(savedClaim.getTotalAmount())
-                .status(savedClaim.getStatus())
-                .employeeId(savedClaim.getEmployee().getId())
-                .employeeCode(savedClaim.getEmployee().getEmployeeCode())
-                .employeeName(savedClaim.getEmployee().getName())
-                .managerId(managerId)
-                .managerName(managerName)
-                .createdAt(savedClaim.getCreatedAt())
-                .submittedAt(savedClaim.getSubmittedAt())
-                .reviewedDate(savedClaim.getReviewedDate())
-                .reviewComment(savedClaim.getReviewComment())
-                .items(expenseItemResponseList)
-                .build();
-    }
-
-    /**
-     * maps the expenseItem entity to an expenseItemResponse Dto
-     *
-     * @param expenseItem - contains details of the item
-     * @return the mapped ExpenseItemResponse
-     */
-    private ExpenseItemResponse mapItemToResponse(ExpenseItem expenseItem) {
-        return ExpenseItemResponse.builder()
-                .itemId(expenseItem.getItemId())
-                .claimId(expenseItem.getClaim().getClaimId())
-                .category(expenseItem.getCategory())
-                .description(expenseItem.getDescription())
-                .amount(expenseItem.getAmount())
-                .expenseDate(expenseItem.getExpenseDate())
-                .build();
-    }
 
     /**
      * generates a unique claim number in the formate CLM-{YEAR}-{SEQUENCE}.
@@ -189,6 +131,7 @@ public class ClaimService {
      */
     @Transactional
     public ClaimResponse getClaimById(Long claimId, String userEmail){
+        logger.info("Retrieving claim by id: {}",claimId);
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND));
 
@@ -197,7 +140,9 @@ public class ClaimService {
 
         validateClaimAccess(claim, user);
 
-        return mapToResponse(claim);
+
+        logger.info("Claim retrieved");
+        return claimMapper.toClaimResponse(claim);
 
     }
 
@@ -209,6 +154,8 @@ public class ClaimService {
      * @throws UnauthorizedAccessException if the user is not authorized
      */
     private void validateClaimAccess(ExpenseClaim claim, User user){
+
+        logger.info("Validating claim access.");
 
         if(claim.getEmployee().getId().equals(user.getId())){
             return;
@@ -240,6 +187,8 @@ public class ClaimService {
      */
     @Transactional
     public ClaimResponse submitClaim(Long claimId, String userEmail){
+
+        logger.info("Submitting claim with the id: {}",claimId);
 
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID + claimId));
@@ -273,7 +222,9 @@ public class ClaimService {
                 String.valueOf(ClaimStatus.SUBMITTED));
 
 
-        return mapToResponse(savedClaim);
+
+        logger.info("Claim submitted");
+        return claimMapper.toClaimResponse(savedClaim);
 
 
     }
@@ -285,14 +236,18 @@ public class ClaimService {
      * @throws UserNotFoundException - if the user is not found.
      */
     public List<ClaimResponse> getAllMyClaims(String userEmail) {
+
+        logger.info("Retrieving all the claims of the user: {} ",userEmail);
         User employee = userRepository.findByEmail(userEmail)
                 .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND_WITH_EMAIL));
 
         List<ExpenseClaim> claims = expenseClaimRepository.findByEmployee(employee);
 
-        return claims.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+
+
+        logger.info("All the claims retrieved successfully.");
+
+        return claimMapper.toClaimResponseList(claims);
 
 
     }
@@ -305,14 +260,17 @@ public class ClaimService {
      * @throws UserNotFoundException if the user is not found
      */
     public List<ClaimResponse> getAllMyClaimsByStatus(String userEmail, ClaimStatus status){
+
+        logger.info("Retrieving the claims by status:{}",status);
+
         User employee = userRepository.findByEmail(userEmail)
                 .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND_WITH_EMAIL));
 
         List<ExpenseClaim> claims = expenseClaimRepository.findByEmployeeAndStatus(employee, status);
 
-        return claims.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+
+
+        return claimMapper.toClaimResponseList(claims);
     }
 
     /**
@@ -326,6 +284,8 @@ public class ClaimService {
      */
     @Transactional
     public void deleteClaim(Long claimId, String userEmail){
+
+        logger.info("Deleting the claim with id:{}",claimId);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(()-> new UserNotFoundException(ErrorMessageConstants.USER_NOT_FOUND_WITH_EMAIL));
 
@@ -337,7 +297,7 @@ public class ClaimService {
         }
 
         if(expenseClaim.getStatus()!= ClaimStatus.DRAFT){
-            throw new InvalidClaimStatus(ErrorMessageConstants.INVALID_CLAIM_STATUS_FOR_CLAIM_DELETION);
+            throw new InvalidClaimStatus(ErrorMessageConstants.INVALID_CLAIM_STATUS_FOR_CLAIM_DELETION + expenseClaim.getStatus());
         }
 
         auditLogRepository.deleteByClaimClaimId(claimId);
@@ -345,6 +305,8 @@ public class ClaimService {
         expenseItemRepository.deleteByClaimClaimId(claimId);
 
         expenseClaimRepository.delete(expenseClaim);
+
+        logger.info("The claim with id {} deleted successfully",claimId);
 
         expenseClaimRepository.flush();
     }
@@ -366,6 +328,8 @@ public class ClaimService {
     @Transactional
     public ClaimResponse updateClaim(Long claimId, UpdateClaimRequest updateClaimRequest, String userEmail){
 
+        logger.info("Updating the claim with the id:{}", claimId);
+
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID + claimId));
 
@@ -385,7 +349,11 @@ public class ClaimService {
 
         ExpenseClaim updatedClaim = expenseClaimRepository.save(claim);
 
-        return mapToResponse(updatedClaim);
+
+
+        logger.info("Claim with the id {} updated sucessfully",claimId);
+
+        return claimMapper.toClaimResponse(updatedClaim);
     }
 
 

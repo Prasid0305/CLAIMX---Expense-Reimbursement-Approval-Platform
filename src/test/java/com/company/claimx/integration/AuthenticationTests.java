@@ -1,6 +1,8 @@
 package com.company.claimx.integration;
 
+import com.company.claimx.context.AuthenticationContext;
 import com.company.claimx.dto.request.LoginRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.LoginResponse;
 import com.company.claimx.repository.ExpenseClaimRepository;
 import org.junit.jupiter.api.MethodOrderer;
@@ -15,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -44,10 +49,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -58,7 +64,7 @@ public class AuthenticationTests {
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode(), "Status should be 200 OK");
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         assertEquals("ADMIN", loginResponse.getRole().toString(), "Role should be EMPLOYEE");
@@ -78,10 +84,11 @@ public class AuthenticationTests {
         loginRequest.setEmail("admin@claimx.com");
         loginRequest.setPassword("wrongPassword");
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
         logger.info("Response Status:{} " ,responseEntity.getStatusCode());
@@ -104,10 +111,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -129,10 +137,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -143,7 +152,7 @@ public class AuthenticationTests {
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         assertEquals("EMPLOYEE", loginResponse.getRole().toString());
@@ -162,10 +171,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -176,7 +186,7 @@ public class AuthenticationTests {
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         assertEquals("MANAGER", loginResponse.getRole().toString());
@@ -194,10 +204,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -208,7 +219,7 @@ public class AuthenticationTests {
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         assertEquals("FINANCE", loginResponse.getRole().toString());
@@ -232,10 +243,11 @@ public class AuthenticationTests {
 
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -246,7 +258,7 @@ public class AuthenticationTests {
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode(), "Status should be 200 OK");
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         assertEquals(role, loginResponse.getRole().toString());

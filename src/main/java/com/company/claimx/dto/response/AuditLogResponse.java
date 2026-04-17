@@ -25,7 +25,6 @@ public class AuditLogResponse {
     private String action;
     private String oldStatus;
     private String newStatus;
-//    private String comments;
     private LocalDateTime timestamp;
 
 }

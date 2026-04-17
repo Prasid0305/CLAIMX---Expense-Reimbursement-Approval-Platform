@@ -13,6 +13,7 @@ import com.company.claimx.enums.UserRole;
 import com.company.claimx.exception.InvalidClaimStatus;
 import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,11 +63,15 @@ public class ClaimServiceTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private ClaimMapper claimMapper;
+
     private User employee;
     private User manager;
     private ExpenseClaim claim;
     private CreateClaimRequest createClaimRequest;
     private EmployeeManager employeeManager;
+
 
     @BeforeEach
     public void setUp(){
@@ -110,13 +116,48 @@ public class ClaimServiceTest {
 
     }
 
+    public ClaimResponse createMockClaimResponse(ExpenseClaim claim) {
+        return ClaimResponse.builder()
+                .claimId(claim.getClaimId())
+                .claimNumber(claim.getClaimNumber())
+                .title(claim.getTitle())
+                .status(claim.getStatus())
+                .totalAmount(claim.getTotalAmount())
+                .employeeId(claim.getEmployee().getId())
+                .employeeCode(claim.getEmployee().getEmployeeCode())
+                .employeeName(claim.getEmployee().getName())
+                .managerId(manager != null ? manager.getId() : null)
+                .managerName(manager != null ? manager.getName() : null)
+                .items(Collections.emptyList())
+                .build();
+    }
+
+    public List<ClaimResponse> claimResponseList(List<ExpenseClaim> claims) {
+        return claims.stream()
+                .map(claim -> ClaimResponse.builder()
+                        .claimId(claim.getClaimId())
+                        .claimNumber(claim.getClaimNumber())
+                        .title(claim.getTitle())
+                        .status(claim.getStatus())
+                        .totalAmount(claim.getTotalAmount())
+                        .employeeId(claim.getEmployee().getId())
+                        .employeeCode(claim.getEmployee().getEmployeeCode())
+                        .employeeName(claim.getEmployee().getName())
+                        .managerId(manager != null ? manager.getId() : null)
+                        .managerName(manager != null ? manager.getName() : null)
+                        .items(Collections.emptyList())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
 
     @Test
     public void testCreateClaimSuccess(){
 
         when(userRepository.findByEmail("pedri.employee@claimx.com")).thenReturn(Optional.of(employee));
 
-        when(employeeManagerRepository.findByEmployee(employee)).thenReturn(Optional.of(employeeManager));
+        when(employeeManagerRepository.existsByEmployee(employee)).thenReturn(true);
 
 
 
@@ -125,6 +166,11 @@ public class ClaimServiceTest {
 
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(java.util.Collections.emptyList());
+
+        ClaimResponse mockResponse = createMockClaimResponse(claim);
+
+        when(claimMapper.toClaimResponse(claim)).thenReturn(mockResponse);
+
 
         ClaimResponse claimResponse = claimService.createClaim(createClaimRequest, "pedri.employee@claimx.com");
 
@@ -140,8 +186,9 @@ public class ClaimServiceTest {
         assertEquals(ClaimStatus.DRAFT,claimResponse.getStatus());
 
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
-        verify(employeeManagerRepository, times(2)).findByEmployee(employee);
+        verify(employeeManagerRepository, times(1)).existsByEmployee(employee);
         verify(expenseClaimRepository, times(1)).save(any(ExpenseClaim.class));
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(auditService, times(1)).logClaimAction(
                 any(ExpenseClaim.class),
                 eq(employee),
@@ -194,6 +241,10 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(java.util.Collections.emptyList());
 
+        ClaimResponse mockResponse = createMockClaimResponse(claim);
+
+        when(claimMapper.toClaimResponse(claim)).thenReturn(mockResponse);
+
 
         ClaimResponse response = claimService.getClaimById(1L, "pedri.employee@claimx.com");
 
@@ -204,6 +255,7 @@ public class ClaimServiceTest {
 
         verify(expenseClaimRepository, times(1)).findById(1L);
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
 
 
     }
@@ -225,20 +277,25 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(java.util.Collections.emptyList());
 
+        ClaimResponse mockResponse = createMockClaimResponse(claim);
+
+        when(claimMapper.toClaimResponse(claim)).thenReturn(mockResponse);
+
 
         ClaimResponse response = claimService.submitClaim(1L, "pedri.employee@claimx.com");
 
-        // Assert
+
         assertNotNull(response);
         assertEquals(ClaimStatus.SUBMITTED, claim.getStatus());
         assertNotNull(claim.getSubmittedAt());
 
         verify(expenseClaimRepository, times(1)).save(claim);
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(auditService, times(1)).logClaimAction(
                 eq(claim),
                 eq(employee),
                 eq(AuditActions.CLAIM_SUBMITTED.getValue()),
-                eq("SUBMITTED"),
+                eq("DRAFT"),
                 eq("SUBMITTED")
         );
 
@@ -268,9 +325,14 @@ public class ClaimServiceTest {
         List<ExpenseClaim> claims = Arrays.asList(claim, claim2, claim3);
 
         when(userRepository.findByEmail("pedri.employee@claimx.com")).thenReturn(Optional.of(employee));
+        when(employeeManagerRepository.existsByEmployee(employee)).thenReturn(true);
         when(expenseClaimRepository.findByEmployee(employee)).thenReturn(claims);
-        when(employeeManagerRepository.findByEmployee(employee)).thenReturn(Optional.of(employeeManager));
         when(expenseItemRepository.findByClaimClaimId(anyLong())).thenReturn(Collections.emptyList());
+
+        List<ClaimResponse> mockResponses = claimResponseList(claims);
+
+        when(claimMapper.toClaimResponseList(claims))
+                .thenReturn(mockResponses);
 
 
         List<ClaimResponse> responses = claimService.getAllMyClaims("pedri.employee@claimx.com");
@@ -293,8 +355,7 @@ public class ClaimServiceTest {
 
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
         verify(expenseClaimRepository, times(1)).findByEmployee(employee);
-        verify(employeeManagerRepository, times(3)).findByEmployee(employee); // Once per claim
-        verify(expenseItemRepository, times(3)).findByClaimClaimId(anyLong()); // Once per claim
+        verify(claimMapper, times(1)).toClaimResponseList(anyList());
 
         logger.info("Get all my claims test successful");
     }
@@ -315,6 +376,7 @@ public class ClaimServiceTest {
 
         when(userRepository.findByEmail("pedri.employee@claimx.com"))
                 .thenReturn(Optional.of(employee));
+        when(employeeManagerRepository.existsByEmployee(employee)).thenReturn(true);
         when(expenseClaimRepository.findByEmployeeAndStatus(employee, ClaimStatus.DRAFT))
                 .thenReturn(draftClaims);
         when(employeeManagerRepository.findByEmployee(employee))
@@ -322,6 +384,10 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(anyLong()))
                 .thenReturn(Collections.emptyList());
 
+        List<ClaimResponse> mockResponses = claimResponseList(draftClaims);
+
+        when(claimMapper.toClaimResponseList(draftClaims))
+                .thenReturn(mockResponses);
 
         List<ClaimResponse> responses = claimService.getAllMyClaimsByStatus(
                 "pedri.employee@claimx.com",
@@ -340,8 +406,7 @@ public class ClaimServiceTest {
 
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
         verify(expenseClaimRepository, times(1)).findByEmployeeAndStatus(employee, ClaimStatus.DRAFT);
-        verify(employeeManagerRepository, times(2)).findByEmployee(employee);
-        verify(expenseItemRepository, times(2)).findByClaimClaimId(anyLong());
+        verify(claimMapper, times(1)).toClaimResponseList(anyList());
 
         logger.info("Get claims by status test successful");
     }
@@ -425,7 +490,6 @@ public class ClaimServiceTest {
         when(userRepository.findByEmail("pedri.employee@claimx.com"))
                 .thenReturn(Optional.of(employee));
 
-
         ExpenseClaim updatedClaim = new ExpenseClaim();
         updatedClaim.setClaimId(1L);
         updatedClaim.setClaimNumber("CLM-2026-01012");
@@ -442,6 +506,9 @@ public class ClaimServiceTest {
         when(expenseItemRepository.findByClaimClaimId(1L))
                 .thenReturn(Collections.emptyList());
 
+        ClaimResponse mockResponse = createMockClaimResponse(updatedClaim);
+
+        when(claimMapper.toClaimResponse(updatedClaim)).thenReturn(mockResponse);
 
         ClaimResponse response = claimService.updateClaim(1L, updateRequest, "pedri.employee@claimx.com");
 
@@ -453,6 +520,7 @@ public class ClaimServiceTest {
 
         verify(expenseClaimRepository, times(1)).findById(1L);
         verify(userRepository, times(1)).findByEmail("pedri.employee@claimx.com");
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(expenseClaimRepository, times(1)).save(any(ExpenseClaim.class));
 
         logger.info("Update claim test successful");

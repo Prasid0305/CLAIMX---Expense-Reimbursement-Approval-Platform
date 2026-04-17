@@ -33,10 +33,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleUserNotFoundException(UserNotFoundException userNotFoundException){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
-//        errorResponse.put("error", "User not found");
-//        errorResponse.put("message", userNotFoundException.getMessage());
 
         ApiResponse<Void> errorResponse = ApiResponse.error(userNotFoundException.getMessage());
 
@@ -50,10 +46,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(UserInactiveException.class)
     public ResponseEntity<ApiResponse<Void>> handleUserInactive(UserInactiveException userInactiveException){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.FORBIDDEN.value());
-//        errorResponse.put("error", "User inactive");
-//        errorResponse.put("message", userInactiveException.getMessage());
+
         ApiResponse<Void> errorResponse = ApiResponse.error(userInactiveException.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
@@ -67,10 +60,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> badCredentialsException(BadCredentialsException badCredentialsException){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.FORBIDDEN.value());
-//        errorResponse.put("error", "Bad credentials");
-//        errorResponse.put("message", badCredentialsException.getMessage());
 
 
         ApiResponse<Void> errorResponse = ApiResponse.error(badCredentialsException.getMessage());
@@ -85,10 +74,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(UnauthorizedAccessException.class)
     public ResponseEntity<ApiResponse<Void>> unauthorizedAccessException(UnauthorizedAccessException unauthorizedAccessException){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.FORBIDDEN.value());
-//        errorResponse.put("error", "unauthorized Access");
-//        errorResponse.put("message", unauthorizedAccessException.getMessage());
+
         ApiResponse<Void> errorResponse = ApiResponse.error(unauthorizedAccessException.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
@@ -103,10 +89,6 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ClaimNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> claimNotFoundException(ClaimNotFoundException claimNotFoundException){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
-//        errorResponse.put("error", "Claim not found");
-//        errorResponse.put("message", claimNotFoundException.getMessage());
 
         ApiResponse<Void> errorResponse = ApiResponse.error(claimNotFoundException.getMessage());
 
@@ -120,10 +102,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(InvalidClaimStatus.class)
     public ResponseEntity<ApiResponse<Void>> invalidClaimStatus(InvalidClaimStatus invalidClaimStatus){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.BAD_REQUEST);
-//        errorResponse.put("error", "invalid claim status");
-//        errorResponse.put("message", invalidClaimStatus.getMessage());
+
 
         ApiResponse<Void> errorResponse = ApiResponse.error(invalidClaimStatus.getMessage());
 
@@ -137,10 +116,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ItemNotFound.class)
     public ResponseEntity<ApiResponse<Void>> itemNotFound(ItemNotFound itemNotFound){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
-//        errorResponse.put("error", "item not found");
-//        errorResponse.put("message", itemNotFound.getMessage());
+
 
         ApiResponse<Void> errorResponse = ApiResponse.error(itemNotFound.getMessage());
 
@@ -155,10 +131,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ItemDoesNotBelongToClaim.class)
     public ResponseEntity<ApiResponse<Void>> itemDoesNotBelongToClaim(ItemDoesNotBelongToClaim itemDoesNotBelongToClaim){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
-//        errorResponse.put("error", "item does not belong to claim");
-//        errorResponse.put("message", itemDoesNotBelongToClaim.getMessage());
+
 
         ApiResponse<Void> errorResponse = ApiResponse.error(itemDoesNotBelongToClaim.getMessage());
 
@@ -190,10 +163,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotAuthenticated.class)
     public ResponseEntity<ApiResponse<Void>> userNotAuthenticated(UserNotAuthenticated userNotAuthenticated){
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
-//        errorResponse.put("error", "User is not authenticated");
-//        errorResponse.put("message", userNotAuthenticated.getMessage());
+
         ApiResponse<Void> errorResponse = ApiResponse.error(ErrorMessageConstants.USER_NOT_AUTHENTICATED);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);

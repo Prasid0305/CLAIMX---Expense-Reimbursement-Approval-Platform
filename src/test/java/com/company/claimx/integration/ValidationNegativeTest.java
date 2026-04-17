@@ -4,6 +4,7 @@ import com.company.claimx.dto.request.AddExpenseItemRequest;
 import com.company.claimx.dto.request.AddMultipleItemRequest;
 import com.company.claimx.dto.request.CreateClaimRequest;
 import com.company.claimx.dto.request.LoginRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.dto.response.ExpenseItemResponse;
 import com.company.claimx.dto.response.LoginResponse;
@@ -22,10 +23,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -64,10 +67,11 @@ public class ValidationNegativeTest {
         loginRequest.setPassword("prajwal@123");
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>() {}
         );
 
 
@@ -77,7 +81,7 @@ public class ValidationNegativeTest {
 
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        employeeToken = responseEntity.getBody().getToken();
+        employeeToken = responseEntity.getBody().getData().getToken();
 
 
 
@@ -87,7 +91,7 @@ public class ValidationNegativeTest {
 
 
         assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
+        assertNotNull(responseEntity.getBody().getData().getToken(), "Token is null");
     }
 
 
@@ -105,10 +109,12 @@ public class ValidationNegativeTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -131,10 +137,12 @@ public class ValidationNegativeTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -145,7 +153,7 @@ public class ValidationNegativeTest {
 
     @Test
     @Order(4)
-    void step2_CreateClaimTets(){
+    void step2_CreateClaimTest(){
 
 
 
@@ -159,10 +167,12 @@ public class ValidationNegativeTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -171,7 +181,7 @@ public class ValidationNegativeTest {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Status should be 201 Created");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse, "Response body should not be null");
         assertNotNull(claimResponse.getClaimId(), "Claim ID should not be null");
         assertNotNull(claimResponse.getClaimNumber(), "Claim number should not be null");
@@ -206,10 +216,12 @@ public class ValidationNegativeTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AddExpenseItemRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/" + validClaimId + "/items/MultipleItems",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Should reject null category");
@@ -233,10 +245,12 @@ public class ValidationNegativeTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AddExpenseItemRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/" + validClaimId + "/items/multipleItems",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Should reject empty");
@@ -258,10 +272,12 @@ public class ValidationNegativeTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AddExpenseItemRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/" + validClaimId + "/items/multipleItems",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Should reject zero amount");
@@ -284,10 +300,12 @@ public class ValidationNegativeTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AddExpenseItemRequest> entity = new HttpEntity<>(request, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/" + validClaimId + "/items/multipleItems",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Should reject future date");
@@ -306,11 +324,12 @@ public class ValidationNegativeTest {
         headers.set("Authorization", "Bearer " + employeeToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/999",
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "no claim with the given id");
@@ -326,11 +345,12 @@ public class ValidationNegativeTest {
         headers.set("Authorization", "Bearer invalid.token.here");
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/1",
                 HttpMethod.GET,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
@@ -344,11 +364,12 @@ public class ValidationNegativeTest {
         headers.set("Authorization", "Bearer " + expiredToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/1",
                 HttpMethod.GET,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());

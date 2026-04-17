@@ -9,6 +9,7 @@ import com.company.claimx.enums.Category;
 import com.company.claimx.enums.ClaimStatus;
 import com.company.claimx.enums.UserRole;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -45,6 +47,9 @@ public class AdminServiceTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
+
+    @Mock
+    private ClaimMapper claimMapper;
 
     @InjectMocks
     private AdminServices adminServices;
@@ -138,10 +143,27 @@ public class AdminServiceTest {
 
         List<User> users = Arrays.asList(employee, user2, manager, anotherManager);
 
+        List<UserResponse> userResponses = users.stream()
+                        .map(user -> UserResponse.builder()
+                                .id(user.getId())
+                                .name(user.getName())
+                                .email(user.getEmail())
+                                .employeeCode(user.getEmployeeCode())
+                                .role(user.getRole())
+                                .isActive(user.getIsActive())
+                                .createdAt(user.getCreatedAt())
+                                .build())
+                                .collect(Collectors.toList());
+
         when(userRepository.findByEmail("admin@claimx.com"))
                 .thenReturn(Optional.of(adminUser));
         when(userRepository.findAll())
                 .thenReturn(users);
+        when(claimMapper.userResponsesList(users))
+                .thenReturn(userResponses);
+
+
+
 
         List<UserResponse> responses = adminServices.getAllUsers("admin@claimx.com");
 
@@ -153,6 +175,7 @@ public class AdminServiceTest {
 
 
         verify(userRepository, times(1)).findAll();
+        verify(claimMapper, times(1)).userResponsesList(users);
 
         logger.info("get all users test successful");
 
@@ -199,10 +222,30 @@ public class AdminServiceTest {
                 .thenReturn(Optional.of(employee));
         when(expenseClaimRepository.findByEmployee(employee))
                 .thenReturn(claims);
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(anyLong()))
-                .thenReturn(Collections.emptyList());
+
+
+        List<ClaimResponse> mockClaimResponses = claims.stream()
+                .map(claim -> ClaimResponse.builder()
+                        .claimId(claim.getClaimId())
+                        .claimNumber(claim.getClaimNumber())
+                        .title(claim.getTitle())
+                        .status(claim.getStatus())
+                        .totalAmount(claim.getTotalAmount())
+                        .employeeId(claim.getEmployee().getId())
+                        .employeeCode(claim.getEmployee().getEmployeeCode())
+                        .employeeName(claim.getEmployee().getName())
+                        .managerId(manager.getId())
+                        .managerName(manager.getName())
+                        .createdAt(claim.getCreatedAt())
+                        .submittedAt(claim.getSubmittedAt())
+                        .reviewedDate(claim.getReviewedDate())
+                        .reviewComment(claim.getReviewComment())
+                        .items(Collections.emptyList())
+                        .build())
+                .collect(Collectors.toList());
+
+        when(claimMapper.toClaimResponseList(claims))
+                .thenReturn(mockClaimResponses);
 
 
         UserWithClaimResponse response = adminServices.getUserWithClaims(1L);
@@ -218,6 +261,7 @@ public class AdminServiceTest {
 
         verify(userRepository, times(1)).findById(1L);
         verify(expenseClaimRepository, times(1)).findByEmployee(employee);
+        verify(claimMapper, times(1)).toClaimResponseList(claims);
 
         logger.info("Get user with claims test successful");
     }
@@ -265,12 +309,34 @@ public class AdminServiceTest {
         when(expenseClaimRepository.findAll())
                 .thenReturn(allClaims);
 
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
 
+
+
+
+        List<ClaimResponse> mockClaimResponses = allClaims.stream()
+                .map(claim -> ClaimResponse.builder()
+                        .claimId(claim.getClaimId())
+                        .claimNumber(claim.getClaimNumber())
+                        .title(claim.getTitle())
+                        .status(claim.getStatus())
+                        .totalAmount(claim.getTotalAmount())
+                        .employeeId(claim.getEmployee().getId())
+                        .employeeCode(claim.getEmployee().getEmployeeCode())
+                        .employeeName(claim.getEmployee().getName())
+                        .managerId(manager.getId())
+                        .managerName(manager.getName())
+                        .createdAt(claim.getCreatedAt())
+                        .submittedAt(claim.getSubmittedAt())
+                        .reviewedDate(claim.getReviewedDate())
+                        .reviewComment(claim.getReviewComment())
+                        .items(Collections.emptyList())
+                        .build())
+                .collect(Collectors.toList());
+
+        when(claimMapper.toClaimResponseList(allClaims))
+                .thenReturn(mockClaimResponses);
 
         List<ClaimResponse> responses = adminServices.getAllClaims("admin@claimx.com");
-
 
         assertNotNull(responses);
         assertEquals(3, responses.size());
@@ -280,7 +346,9 @@ public class AdminServiceTest {
 
 
 
+
         verify(expenseClaimRepository, times(1)).findAll();
+        verify(claimMapper, times(1)).toClaimResponseList(allClaims);
 
         logger.info("get all claims test successful");
 
@@ -312,6 +380,22 @@ public class AdminServiceTest {
                 .thenReturn(Optional.of(adminUser));
         when(auditService.getAllLogs()).thenReturn(logs);
 
+        List<AuditLogResponse> mockAuditResponses = logs.stream()
+                .map(log -> AuditLogResponse.builder()
+                        .logId(log.getLogId())
+                        .claimId(log.getClaim().getClaimId())
+                        .claimNumber(log.getClaim().getClaimNumber())
+                        .performedBy(log.getPerformedBy().getEmail())
+                        .action(log.getAction())
+                        .oldStatus(log.getOldStatus())
+                        .newStatus(log.getNewStatus())
+                        .timestamp(log.getTimestamp())
+                        .build())
+                .collect(Collectors.toList());
+
+        when(claimMapper.auditLogResponseList(logs))
+                .thenReturn(mockAuditResponses);
+
 
         List<AuditLogResponse> responses = adminServices.getAllAuditLogs("admin@claimx.com");
 
@@ -324,6 +408,7 @@ public class AdminServiceTest {
         assertEquals("APPROVED", responses.get(1).getNewStatus());
 
         verify(auditService, times(1)).getAllLogs();
+        verify(claimMapper, times(1)).auditLogResponseList(logs);
 
         logger.info("get all logs test successful");
     }

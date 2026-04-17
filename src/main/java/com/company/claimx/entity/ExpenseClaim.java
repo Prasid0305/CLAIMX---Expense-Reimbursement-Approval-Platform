@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * entity representing an expense claim
@@ -38,9 +39,7 @@ public class ExpenseClaim {
     @JoinColumn(name = "employee_id",nullable = false)
     private User employee;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "manager_id",nullable = false)
-//    private User manager;
+
 
     @ManyToOne
     @JoinColumn(name = "approved_by_id")
@@ -95,5 +94,8 @@ public class ExpenseClaim {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @OneToMany(mappedBy = "claim", fetch = FetchType.LAZY)
+    private List<ExpenseItem> items;
 
 }

@@ -188,7 +188,6 @@ Each package is designed to enforce separation of concerns and maintain maintain
 com.company.claimx
 
 ---
-
 #### Package Hierarchy
 ```text
 com.company.claimx
@@ -203,11 +202,12 @@ com.company.claimx
 │   ├── SecurityConfig
 │   ├── JwtAuthenticationFilter
 │   ├── JwtUtil
-│   ├── CustomUserDetilsService
+│   ├── CustomUserDetailsService
 │   ├── DataSeeder
 │
 ├── constants
-│   ├── ErrormessagesConstants
+│   ├── ErrorMessagesConstants
+│   ├── MessageResponseConstants
 │
 ├── controller
 │   ├── AuthController
@@ -223,6 +223,7 @@ com.company.claimx
 │   ├── FinanceService
 │   ├── AdminService
 │   ├── AuditService
+│   ├── ManagerLookupService
 │
 ├── repository
 │   ├── UserRepository
@@ -253,8 +254,19 @@ com.company.claimx
 │   ├── InvalidStateException
 │   ├── UnauthorizedActionException
 │
+├── enum
+│   ├── AuditActions
+│   ├── Category
+│   ├── ClaimStatus
+│   ├── UserRole
+│
+├── mapper
+│   ├── ClaimMapper
+│
+│
 └── ClaimxApplication
 ```
+
 ---
 
 ## 3. Database Design

@@ -18,6 +18,8 @@ import com.company.claimx.repository.ExpenseClaimRepository;
 import com.company.claimx.repository.ExpenseItemRepository;
 import com.company.claimx.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
 @Service
 public class ExpenseItemService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExpenseItemService.class);
     @Autowired
     private ExpenseItemRepository expenseItemRepository;
 
@@ -47,6 +50,8 @@ public class ExpenseItemService {
     @Autowired
     private EmployeeManagerRepository employeeManagerRepository;
 
+
+
     /**
      * adding the item details - "category", "description", "string","amount", "expenseDate"
      * @param claimId - to access the claim for which the items are added.
@@ -58,6 +63,8 @@ public class ExpenseItemService {
      */
     @Transactional
     public ExpenseItemResponse addItem(Long claimId, AddExpenseItemRequest addExpenseItemRequest, String userEmail){
+
+        logger.info("Adding items to the claim with id:{}",claimId);
 
 
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
@@ -92,6 +99,8 @@ public class ExpenseItemService {
         updateClaimTotal(claim);
 
 
+        logger.info("Items added to the claim with id:{}",claimId);
+
         return mapToResponse(saveItem);
     }
 
@@ -116,6 +125,8 @@ public class ExpenseItemService {
      * @param claim - expense claim
      */
     private void updateClaimTotal(ExpenseClaim claim) {
+
+        logger.info("Updating the claim total amount");
         BigDecimal totalAmount = expenseItemRepository.calculateTotalByClaimId(claim.getClaimId());
         claim.setTotalAmount(totalAmount);
         expenseClaimRepository.save(claim);
@@ -132,6 +143,8 @@ public class ExpenseItemService {
      */
     @Transactional
     public List<ExpenseItemResponse> getItemByClaim(Long claimId, String userEmail){
+
+        logger.info("Retrieving claim's items");
 
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID +claimId));
@@ -156,6 +169,8 @@ public class ExpenseItemService {
      */
     private void validateClaimAccess(ExpenseClaim claim, User user) {
 
+
+        logger.info("Validating claim access");
         if(claim.getEmployee().getId().equals(user.getId())){
             return;
         }
@@ -187,6 +202,8 @@ public class ExpenseItemService {
     @Transactional
     public void deleteItem(Long claimId, Long itemId, String userEmail){
 
+        logger.info("Delete the item with id:{} belonging to the claim {}",itemId,claimId);
+
         ExpenseItem expenseItem = expenseItemRepository.findById(itemId)
                 .orElseThrow(()-> new  ItemNotFound(ErrorMessageConstants.ITEM_NOT_FOUND_WITH_ID + itemId));
 
@@ -209,6 +226,7 @@ public class ExpenseItemService {
 
         expenseItemRepository.delete(expenseItem);
 
+        logger.info("Item deleted successfully");
         updateClaimTotal(expenseClaim);
     }
 
@@ -230,6 +248,8 @@ public class ExpenseItemService {
      */
     @Transactional
     public ExpenseItemResponse updateExpenseItem(Long claimId, Long itemId, UpdateExpenseItemRequest request, String userEmail){
+
+        logger.info("Updating the item with id:{}",itemId);
 
 
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
@@ -268,6 +288,7 @@ public class ExpenseItemService {
 
         updateClaimTotal(claim);
 
+        logger.info("Updated the item {}, in the claim {}",itemId,claimId);
 
         return mapToResponse(updateItem);
     }
@@ -285,6 +306,8 @@ public class ExpenseItemService {
      * @throws InvalidClaimStatus
      */
     public List<ExpenseItemResponse> addMultipleItems(Long claimId, AddMultipleItemRequest request, String userEmail){
+
+        logger.info("Adding items to the claim id:{}",claimId);
 
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID +claimId));
@@ -321,6 +344,8 @@ public class ExpenseItemService {
 
         updateClaimTotal(claim);
 
+
+        logger.info("Items to the claim {} are added successfully",claimId);
 
         return savedItems.stream()
                 .map(this::mapToResponse)

@@ -36,7 +36,7 @@ public class AdminController {
      *
      * @return list of all users
      */
-    @Operation(summary = "Retriever all the users",description = "Admin gets all the users with their details")
+    @Operation(summary = "Retrieve all the users",description = "Admin gets all the users with their details")
     @GetMapping("/users")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(){
@@ -53,7 +53,7 @@ public class AdminController {
      *
      * @return list of all claims
      */
-    @Operation(summary = "Retriever all the claims of the users",description = "Admin gets all the users with their details")
+    @Operation(summary = "Retrieve all the claims of the users",description = "Admin gets all the users with their details")
     @GetMapping("/claims")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<ApiResponse<List<ClaimResponse>>> getAllClaims(){
@@ -72,7 +72,7 @@ public class AdminController {
      *
      * @return list of audit logs
      */
-    @Operation(summary = "Retriever all the audit logs",description = "Admin gets all the log trails details")
+    @Operation(summary = "Retrieve all the audit logs",description = "Admin gets all the log trails details")
     @GetMapping("/audit-log")
     @Authenticated(roles = {"ADMIN"})
 
@@ -92,7 +92,7 @@ public class AdminController {
      * @param userId - id of the user
      * @return user details with claims
      */
-    @Operation(summary = "Retriever all the user with the claims",description = "Admin gets the users with all claims which belongs to the particular user")
+    @Operation(summary = "Retrieve the user with the claims",description = "Admin gets the users with all claims which belongs to the particular user")
     @GetMapping("/users/{userId}")
     @Authenticated(roles = {"ADMIN"})
     public ResponseEntity<ApiResponse<UserWithClaimResponse>> getUserWithClaims(@Parameter @PathVariable  Long userId){

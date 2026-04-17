@@ -15,6 +15,7 @@ import com.company.claimx.enums.UserRole;
 import com.company.claimx.exception.InvalidClaimStatus;
 import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -60,6 +62,9 @@ public class ManagerServiceTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private ClaimMapper claimMapper;
 
     private User employee;
     private User manager;
@@ -129,6 +134,41 @@ public class ManagerServiceTest {
 
     }
 
+
+    public ClaimResponse createMockClaimResponse(ExpenseClaim claim) {
+        return ClaimResponse.builder()
+                .claimId(claim.getClaimId())
+                .claimNumber(claim.getClaimNumber())
+                .title(claim.getTitle())
+                .status(claim.getStatus())
+                .totalAmount(claim.getTotalAmount())
+                .employeeId(claim.getEmployee().getId())
+                .employeeCode(claim.getEmployee().getEmployeeCode())
+                .employeeName(claim.getEmployee().getName())
+                .managerId(manager != null ? manager.getId() : null)
+                .managerName(manager != null ? manager.getName() : null)
+                .items(Collections.emptyList())
+                .build();
+    }
+
+    public List<ClaimResponse> claimResponseList(List<ExpenseClaim> claims) {
+        return claims.stream()
+                .map(claim -> ClaimResponse.builder()
+                        .claimId(claim.getClaimId())
+                        .claimNumber(claim.getClaimNumber())
+                        .title(claim.getTitle())
+                        .status(claim.getStatus())
+                        .totalAmount(claim.getTotalAmount())
+                        .employeeId(claim.getEmployee().getId())
+                        .employeeCode(claim.getEmployee().getEmployeeCode())
+                        .employeeName(claim.getEmployee().getName())
+                        .managerId(manager != null ? manager.getId() : null)
+                        .managerName(manager != null ? manager.getName() : null)
+                        .items(Collections.emptyList())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     @Test
     void testGetPendingClaims_Success(){
 
@@ -150,8 +190,13 @@ public class ManagerServiceTest {
                 .thenReturn(allSubmittedClaims);
         when(employeeManagerRepository.findByEmployee(employee))
                 .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(1L))
-                .thenReturn(allExpenseItems);
+
+
+
+        List<ClaimResponse> mockResponses = claimResponseList(allSubmittedClaims);
+
+        when(claimMapper.toClaimResponseList(allSubmittedClaims))
+                .thenReturn(mockResponses);
 
         List<ClaimResponse> responses = managerService.getPendingClaims("flick.manager@claimx.com");
 
@@ -162,6 +207,7 @@ public class ManagerServiceTest {
 
         verify(userRepository, times(1)).findByEmail("flick.manager@claimx.com");
         verify(expenseClaimRepository, times(1)).findByStatus(ClaimStatus.SUBMITTED);
+        verify(claimMapper, times(1)).toClaimResponseList(anyList());
         logger.info("Get pending claims test successful");
 
     }
@@ -174,11 +220,12 @@ public class ManagerServiceTest {
                 .thenReturn(Optional.of(employee));
         when(expenseClaimRepository.findById(1L))
                 .thenReturn(Optional.of(submittedClaim));
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(anyLong()))
-                .thenReturn(Collections.emptyList());
 
+
+
+        ClaimResponse mockResponse = createMockClaimResponse(submittedClaim);
+
+        when(claimMapper.toClaimResponse(submittedClaim)).thenReturn(mockResponse);
 
         ClaimResponse responses = managerService.getPendingClaimById(
                 1L,
@@ -192,9 +239,8 @@ public class ManagerServiceTest {
 
 
         verify(userRepository, times(1)).findByEmail("flick.manager@claimx.com");
-//
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
 
-        verify(expenseItemRepository, times(1)).findByClaimClaimId(anyLong());
 
         logger.info("Get claims by Id test successful");
     }
@@ -229,9 +275,12 @@ public class ManagerServiceTest {
                 .thenReturn(Optional.of(employeeManager));
         when(expenseClaimRepository.save(any(ExpenseClaim.class)))
                 .thenReturn(submittedClaim);
-        when(expenseItemRepository.findByClaimClaimId(1L))
-                .thenReturn(Collections.emptyList());
 
+
+
+        ClaimResponse mockResponse = createMockClaimResponse(submittedClaim);
+
+        when(claimMapper.toClaimResponse(submittedClaim)).thenReturn(mockResponse);
 
         ClaimResponse response = managerService.approvePendingClaimById(
                 1L,
@@ -247,6 +296,7 @@ public class ManagerServiceTest {
         assertEquals("Flick", submittedClaim.getApprovedByName());
 
         verify(expenseClaimRepository, times(1)).save(submittedClaim);
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(auditService, times(1)).logClaimAction(
                 eq(submittedClaim),
                 eq(manager),
@@ -321,9 +371,11 @@ public class ManagerServiceTest {
                 .thenReturn(Optional.of(employeeManager));
         when(expenseClaimRepository.save(any(ExpenseClaim.class)))
                 .thenReturn(submittedClaim);
-        when(expenseItemRepository.findByClaimClaimId(1L))
-                .thenReturn(Collections.emptyList());
 
+
+        ClaimResponse mockResponse = createMockClaimResponse(submittedClaim);
+
+        when(claimMapper.toClaimResponse(submittedClaim)).thenReturn(mockResponse);
 
         ClaimResponse response = managerService.rejectPendingClaimById(
                 1L,
@@ -339,6 +391,7 @@ public class ManagerServiceTest {
         assertEquals("Flick", submittedClaim.getApprovedByName());
 
         verify(expenseClaimRepository, times(1)).save(submittedClaim);
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(auditService, times(1)).logClaimAction(
                 eq(submittedClaim),
                 eq(manager),

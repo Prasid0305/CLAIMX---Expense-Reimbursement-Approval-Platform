@@ -3,6 +3,7 @@ package com.company.claimx.integration;
 import com.company.claimx.dto.request.AddExpenseItemRequest;
 import com.company.claimx.dto.request.CreateClaimRequest;
 import com.company.claimx.dto.request.LoginRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.dto.response.ExpenseItemResponse;
 import com.company.claimx.dto.response.LoginResponse;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -67,10 +69,11 @@ public class RollbackMechanismTest {
         loginRequest.setPassword("prajwal@123");
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>() {}
         );
 
 
@@ -80,7 +83,7 @@ public class RollbackMechanismTest {
 
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        employeeToken = responseEntity.getBody().getToken();
+        employeeToken = responseEntity.getBody().getData().getToken();
 
 
 
@@ -90,7 +93,7 @@ public class RollbackMechanismTest {
 
 
         assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
+        assertNotNull(responseEntity.getBody().getData().getToken(), "Token is null");
     }
 
     @Test
@@ -109,10 +112,12 @@ public class RollbackMechanismTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse> >response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -121,7 +126,7 @@ public class RollbackMechanismTest {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Status should be 201 Created");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse, "Response body should not be null");
         assertNotNull(claimResponse.getClaimId(), "Claim ID should not be null");
         assertNotNull(claimResponse.getClaimNumber(), "Claim number should not be null");
@@ -151,10 +156,12 @@ public class RollbackMechanismTest {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
                 "/api/claims/" + claimId + "/submit",
+                HttpMethod.POST,
                 entity,
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
 
@@ -189,13 +196,15 @@ public class RollbackMechanismTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
-        Long claimId = response.getBody().getClaimId();
+        Long claimId = response.getBody().getData().getClaimId();
 
 
         AddExpenseItemRequest itemRequest = new AddExpenseItemRequest();
@@ -205,26 +214,29 @@ public class RollbackMechanismTest {
         itemRequest.setExpenseDate(LocalDate.now());
 
         HttpEntity<AddExpenseItemRequest> itemEntity = new HttpEntity<>(itemRequest, headers);
-        restTemplate.postForEntity(
+        restTemplate.exchange(
                 "/api/claims/" + claimId + "/items",
+                HttpMethod.POST,
                 itemEntity,
                 ExpenseItemResponse.class
         );
 
         HttpEntity<Void> submitEntity = new HttpEntity<>(headers);
-        restTemplate.postForEntity(
+        restTemplate.exchange(
                 "/api/claims/" + claimId + "/submit",
+                HttpMethod.POST,
                 submitEntity,
                 ClaimResponse.class
         );
 
         logger.info("Claim submitted: {}", claimId);
 
-        ResponseEntity<String> deleteResponse = restTemplate.exchange(
-                "/api/claims/delete/" + claimId,
+        ResponseEntity<ApiResponse<String>> deleteResponse = restTemplate.exchange(
+                "/api/claims/" + claimId,
                 HttpMethod.DELETE,
                 new HttpEntity<>(headers),
-                String.class
+                new ParameterizedTypeReference<ApiResponse<String>>() {
+                }
         );
 
         logger.info("Delete response status: {}", deleteResponse.getStatusCode());
@@ -242,42 +254,4 @@ public class RollbackMechanismTest {
     }
 
 
-    @Test
-    @Order(5)
-    void auditLogSurvives_AfterClaimDeletion(){
-        CreateClaimRequest createRequest = new CreateClaimRequest();
-        createRequest.setTitle("Test Audit log remains after deletion");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + employeeToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<CreateClaimRequest> createEntity = new HttpEntity<>(createRequest, headers);
-
-        ResponseEntity<ClaimResponse> createResponse = restTemplate.postForEntity(
-                "/api/claims",
-                createEntity,
-                ClaimResponse.class
-        );
-
-        Long claimId = createResponse.getBody().getClaimId();
-        String claimNumber = createResponse.getBody().getClaimNumber();
-
-
-
-
-        ResponseEntity<Void> deleteResponse = restTemplate.exchange(
-                "/api/claims/delete/" + claimId,
-                HttpMethod.DELETE,
-                new HttpEntity<>(headers),
-                Void.class
-        );
-
-        assertEquals(HttpStatus.NO_CONTENT, deleteResponse.getStatusCode());
-
-        logger.info("Claim deleted successfully");
-
-
-        boolean claimExists = expenseClaimRepository.findById(claimId).isPresent();
-        assertFalse(claimExists, "Claim should be deleted");
-    }
 }

@@ -11,13 +11,12 @@ import java.util.Optional;
 
 public interface ExpenseClaimRepository extends JpaRepository<ExpenseClaim, Long> {
 
-    // Find by employee
+
     List<ExpenseClaim> findByEmployee(User employee);
 
-    // Find by employee and status
     List<ExpenseClaim> findByEmployeeAndStatus(User employee, ClaimStatus status);
 
-    // Find by status
+
     List<ExpenseClaim> findByStatus(ClaimStatus status);
 
     boolean existsByClaimNumber(String claimNumber);

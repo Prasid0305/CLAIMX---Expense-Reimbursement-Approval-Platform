@@ -22,7 +22,7 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    //
+
     private Key getSecretKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
@@ -63,7 +63,7 @@ public class JwtUtil {
         return extractClaim(token, claims -> claims.getExpiration());
     }
 
-    //
+
     public< T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);

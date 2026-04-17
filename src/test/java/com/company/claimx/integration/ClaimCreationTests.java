@@ -3,6 +3,7 @@ package com.company.claimx.integration;
 
 import com.company.claimx.dto.request.CreateClaimRequest;
 import com.company.claimx.dto.request.LoginRequest;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.dto.response.LoginResponse;
 import com.company.claimx.enums.ClaimStatus;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -48,10 +50,11 @@ public class ClaimCreationTests {
         loginRequest.setPassword("prajwal@123");
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -62,14 +65,14 @@ public class ClaimCreationTests {
         assertNotNull(responseEntity, "Response should not be null");
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
-        LoginResponse loginResponse = responseEntity.getBody();
+        LoginResponse loginResponse = responseEntity.getBody().getData();
         assertNotNull(loginResponse.getToken(), "Token should not be null");
         assertFalse(loginResponse.getToken().isEmpty(), "Token should not be empty");
         Assertions.assertEquals("EMPLOYEE", loginResponse.getRole().toString());
 
         logger.info("Token received: {}", loginResponse.getToken().toString());
 
-        employeeToken = responseEntity.getBody().getToken();
+        employeeToken = responseEntity.getBody().getData().getToken();
     }
 
     @Test
@@ -86,10 +89,12 @@ public class ClaimCreationTests {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -98,7 +103,7 @@ public class ClaimCreationTests {
 
         Assertions.assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Status should be 201 Created");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse, "Response body should not be null");
         assertNotNull(claimResponse.getClaimId(), "Claim ID should not be null");
         assertNotNull(claimResponse.getClaimNumber(), "Claim number should not be null");
@@ -123,11 +128,12 @@ public class ClaimCreationTests {
 
         logger.info("Sending GET /api/claims/{}", createdClaimId);
 
-        ResponseEntity<ClaimResponse> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims/" + createdClaimId,
                 HttpMethod.GET,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -135,7 +141,7 @@ public class ClaimCreationTests {
 
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse);
         Assertions.assertEquals(createdClaimId, claimResponse.getClaimId());
         Assertions.assertEquals("Business Trip", claimResponse.getTitle());

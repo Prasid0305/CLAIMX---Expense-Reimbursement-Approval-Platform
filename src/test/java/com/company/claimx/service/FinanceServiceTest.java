@@ -11,6 +11,7 @@ import com.company.claimx.enums.UserRole;
 import com.company.claimx.exception.ClaimNotFoundException;
 import com.company.claimx.exception.InvalidClaimStatus;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -55,6 +57,9 @@ public class FinanceServiceTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private ClaimMapper claimMapper;
 
     private User employee;
     private User manager;
@@ -118,6 +123,40 @@ public class FinanceServiceTest {
 
     }
 
+    public ClaimResponse createMockClaimResponse(ExpenseClaim claim) {
+        return ClaimResponse.builder()
+                .claimId(claim.getClaimId())
+                .claimNumber(claim.getClaimNumber())
+                .title(claim.getTitle())
+                .status(claim.getStatus())
+                .totalAmount(claim.getTotalAmount())
+                .employeeId(claim.getEmployee().getId())
+                .employeeCode(claim.getEmployee().getEmployeeCode())
+                .employeeName(claim.getEmployee().getName())
+                .managerId(manager != null ? manager.getId() : null)
+                .managerName(manager != null ? manager.getName() : null)
+                .items(Collections.emptyList())
+                .build();
+    }
+
+    public List<ClaimResponse> claimResponseList(List<ExpenseClaim> claims) {
+        return claims.stream()
+                .map(claim -> ClaimResponse.builder()
+                        .claimId(claim.getClaimId())
+                        .claimNumber(claim.getClaimNumber())
+                        .title(claim.getTitle())
+                        .status(claim.getStatus())
+                        .totalAmount(claim.getTotalAmount())
+                        .employeeId(claim.getEmployee().getId())
+                        .employeeCode(claim.getEmployee().getEmployeeCode())
+                        .employeeName(claim.getEmployee().getName())
+                        .managerId(manager != null ? manager.getId() : null)
+                        .managerName(manager != null ? manager.getName() : null)
+                        .items(Collections.emptyList())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     @Test
     void testGetApprovedClaims_Success() {
 
@@ -136,11 +175,13 @@ public class FinanceServiceTest {
                 .thenReturn(Optional.of(financeUser));
         when(expenseClaimRepository.findByStatus(ClaimStatus.APPROVED))
                 .thenReturn(approvedClaims);
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(1L))
-                .thenReturn(Collections.emptyList());
 
+
+
+        List<ClaimResponse> mockResponses = claimResponseList(approvedClaims);
+
+        when(claimMapper.toClaimResponseList(approvedClaims))
+                .thenReturn(mockResponses);
 
         List<ClaimResponse> responses = financeService.getApprovedClaim("finance@claimx.com");
 
@@ -151,6 +192,7 @@ public class FinanceServiceTest {
         assertEquals(new BigDecimal("50000.00"), responses.get(0).getTotalAmount());
 
         verify(expenseClaimRepository, times(1)).findByStatus(ClaimStatus.APPROVED);
+        verify(claimMapper, times(1)).toClaimResponseList(anyList());
 
         logger.info("Get approved claims test successful");
     }
@@ -180,11 +222,11 @@ public class FinanceServiceTest {
                 .thenReturn(Optional.of(financeUser));
         when(expenseClaimRepository.save(any(ExpenseClaim.class)))
                 .thenReturn(approvedClaim);
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(1L))
-                .thenReturn(Collections.emptyList());
 
+
+        ClaimResponse mockResponse = createMockClaimResponse(approvedClaim);
+
+        when(claimMapper.toClaimResponse(approvedClaim)).thenReturn(mockResponse);
 
         ClaimResponse response = financeService.payClaims(1L, "finance@claimx.com");
 
@@ -193,6 +235,7 @@ public class FinanceServiceTest {
         assertEquals(ClaimStatus.PAID, approvedClaim.getStatus());
 
         verify(expenseClaimRepository, times(1)).save(approvedClaim);
+        verify(claimMapper, times(1)).toClaimResponse(any(ExpenseClaim.class));
         verify(auditService, times(1)).logClaimAction(
                 eq(approvedClaim),
                 eq(financeUser),
@@ -262,11 +305,12 @@ public class FinanceServiceTest {
                 .thenReturn(Optional.of(financeUser));
         when(expenseClaimRepository.findByStatus(ClaimStatus.PAID))
                 .thenReturn(paidClaims);
-        when(employeeManagerRepository.findByEmployee(employee))
-                .thenReturn(Optional.of(employeeManager));
-        when(expenseItemRepository.findByClaimClaimId(anyLong()))
-                .thenReturn(Collections.emptyList());
 
+
+        List<ClaimResponse> mockResponses = claimResponseList(paidClaims);
+
+        when(claimMapper.toClaimResponseList(paidClaims))
+                .thenReturn(mockResponses);
 
         List<ClaimResponse> responses = financeService.getAllPaidClaim("finance@claimx.com");
 
@@ -277,6 +321,7 @@ public class FinanceServiceTest {
         assertEquals(ClaimStatus.PAID, responses.get(1).getStatus());
 
         verify(expenseClaimRepository, times(1)).findByStatus(ClaimStatus.PAID);
+        verify(claimMapper, times(1)).toClaimResponseList(anyList());
 
         logger.info("Get all paid claims test successful");
     }

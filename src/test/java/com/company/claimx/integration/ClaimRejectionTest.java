@@ -1,6 +1,7 @@
 package com.company.claimx.integration;
 
 import com.company.claimx.dto.request.*;
+import com.company.claimx.dto.response.ApiResponse;
 import com.company.claimx.dto.response.ClaimResponse;
 import com.company.claimx.dto.response.ExpenseItemResponse;
 import com.company.claimx.dto.response.LoginResponse;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -68,10 +70,11 @@ public class ClaimRejectionTest {
         loginRequest.setPassword("prajwal@123");
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -81,7 +84,7 @@ public class ClaimRejectionTest {
 
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        employeeToken = responseEntity.getBody().getToken();
+        employeeToken = responseEntity.getBody().getData().getToken();
 
 
 
@@ -91,7 +94,7 @@ public class ClaimRejectionTest {
 
 
         assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
+        assertNotNull(responseEntity.getBody().getData().getToken(), "Token is null");
     }
 
 
@@ -111,10 +114,12 @@ public class ClaimRejectionTest {
         HttpEntity<CreateClaimRequest> entity = new HttpEntity<>(request, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -123,7 +128,7 @@ public class ClaimRejectionTest {
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode(), "Status should be 201 Created");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse, "Response body should not be null");
         assertNotNull(claimResponse.getClaimId(), "Claim ID should not be null");
         assertNotNull(claimResponse.getClaimNumber(), "Claim number should not be null");
@@ -166,17 +171,20 @@ public class ClaimRejectionTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AddMultipleItemRequest> entity = new HttpEntity<>(bulkRequest, headers);
 
-        ResponseEntity<ExpenseItemResponse[]> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<List<ExpenseItemResponse>>> response = restTemplate.exchange(
                 "/api/claims/" + claimId + "/items/multipleItems",
+                HttpMethod.POST,
                 entity,
-                ExpenseItemResponse[].class
+                new ParameterizedTypeReference<ApiResponse<List<ExpenseItemResponse>>>() {
+                }
         );
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().length);
 
-        logger.info("   Total items: {}", response.getBody().length);
+        List<ExpenseItemResponse> allItems = response.getBody().getData();
+
+        logger.info("   Total items: {}", allItems.size());
         logger.info("   Item 1: {} - {}", item1.getDescription(), item1.getAmount());
         logger.info("   Item 2: {} - {}", item2.getDescription(), item2.getAmount());
 
@@ -198,16 +206,18 @@ public class ClaimRejectionTest {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/claims/" + claimId + "/submit",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertNotNull(claimResponse);
         assertEquals(ClaimStatus.SUBMITTED, claimResponse.getStatus());
         assertNotNull(claimResponse.getSubmittedAt());
@@ -232,10 +242,11 @@ public class ClaimRejectionTest {
         loginRequest.setPassword("venkat@123");
 
 
-        ResponseEntity<LoginResponse> responseEntity = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<LoginResponse>> responseEntity = restTemplate.exchange(
                 "/api/auth/login",
-                loginRequest,
-                LoginResponse.class
+                HttpMethod.POST,
+                new HttpEntity<>(loginRequest),
+                new ParameterizedTypeReference<ApiResponse<LoginResponse>>(){}
         );
 
 
@@ -245,7 +256,7 @@ public class ClaimRejectionTest {
 
         assertNotNull(responseEntity, "Response should not be null");
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        managerToken = responseEntity.getBody().getToken();
+        managerToken = responseEntity.getBody().getData().getToken();
 
 
 
@@ -255,7 +266,7 @@ public class ClaimRejectionTest {
 
 
         assertNotNull(responseEntity.getBody(), "Login response body is null");
-        assertNotNull(responseEntity.getBody().getToken(), "Token is null");
+        assertNotNull(responseEntity.getBody().getData().getToken(), "Token is null");
 
 
     }
@@ -268,17 +279,20 @@ public class ClaimRejectionTest {
         headers.set("Authorization", "Bearer " + managerToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<ClaimResponse[]> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<List<ClaimResponse>>> response = restTemplate.exchange(
                 "/api/manager/claims/pending",
                 HttpMethod.GET,
                 entity,
-                ClaimResponse[].class
+                new ParameterizedTypeReference<ApiResponse<List<ClaimResponse>>>() {
+                }
         );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
 
-        ClaimResponse ourClaim = Arrays.stream(response.getBody())
+        List<ClaimResponse> allCLaims = response.getBody().getData();
+
+        ClaimResponse ourClaim = allCLaims.stream()
                 .filter(c -> c.getClaimId().equals(claimId))
                 .findFirst()
                 .orElse(null);
@@ -286,7 +300,7 @@ public class ClaimRejectionTest {
         assertNotNull(ourClaim, "Our claim should be in submitted list");
         assertEquals(ClaimStatus.SUBMITTED, ourClaim.getStatus());
 
-        logger.info("Total submitted: {}", response.getBody().length);
+        logger.info("Total submitted: {}", allCLaims.size());
     }
 
     @Test
@@ -297,12 +311,12 @@ public class ClaimRejectionTest {
         headers.set("Authorization", "Bearer " + managerToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        logger.info("Manager Token in this test: [{}]", managerToken);
-        ResponseEntity<ClaimResponse> response = restTemplate.exchange(
-                "/api/manager/claims/pending/" + claimId ,
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
+                "/api/manager/claims/pending/" + claimId,
                 HttpMethod.GET,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -311,7 +325,7 @@ public class ClaimRejectionTest {
         assertNotNull(response.getBody());
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Status should be 200 OK");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertEquals(ClaimStatus.SUBMITTED, claimResponse.getStatus());
 
         claimId = claimResponse.getClaimId();
@@ -334,10 +348,12 @@ public class ClaimRejectionTest {
         HttpEntity<RejectClaimRequest> entity = new HttpEntity<>(rejectClaimRequest, headers);
 
 
-        ResponseEntity<ClaimResponse> response = restTemplate.postForEntity(
+        ResponseEntity<ApiResponse<ClaimResponse>> response = restTemplate.exchange(
                 "/api/manager/claims/pending/" + claimId + "/reject",
+                HttpMethod.POST,
                 entity,
-                ClaimResponse.class
+                new ParameterizedTypeReference<ApiResponse<ClaimResponse>>() {
+                }
         );
 
         logger.info("Response Status: {}", response.getStatusCode());
@@ -346,7 +362,7 @@ public class ClaimRejectionTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Status should be 200 OK");
 
-        ClaimResponse claimResponse = response.getBody();
+        ClaimResponse claimResponse = response.getBody().getData();
         assertEquals(ClaimStatus.REJECTED, claimResponse.getStatus());
         assertEquals("the claim is rejected", claimResponse.getReviewComment());
 

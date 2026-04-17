@@ -16,11 +16,14 @@ import com.company.claimx.exception.ClaimNotFoundException;
 import com.company.claimx.exception.InvalidClaimStatus;
 import com.company.claimx.exception.UnauthorizedAccessException;
 import com.company.claimx.exception.UserNotFoundException;
+import com.company.claimx.mapper.ClaimMapper;
 import com.company.claimx.repository.EmployeeManagerRepository;
 import com.company.claimx.repository.ExpenseClaimRepository;
 import com.company.claimx.repository.ExpenseItemRepository;
 import com.company.claimx.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 @Service
 public class ManagerService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ManagerService.class);
     @Autowired
     private UserRepository userRepository;
 
@@ -50,6 +54,9 @@ public class ManagerService {
     @Autowired
     private EmployeeManagerRepository employeeManagerRepository;
 
+    @Autowired
+    private ClaimMapper claimMapper;
+
     /**
      * to get all the pending claims belonging to the manager
      * the claims must be in the SUBMITTED state
@@ -59,91 +66,34 @@ public class ManagerService {
      */
     @Transactional
     public List<ClaimResponse> getPendingClaims(String userEmail){
-        User manager = userRepository.findByEmail(userEmail)
-                .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.MANAGER_NOT_FOUND + userEmail));
+        logger.info("Retrieving submitted claims");
+        try {
+            User manager = userRepository.findByEmail(userEmail)
+                    .orElseThrow(()->new UserNotFoundException(ErrorMessageConstants.MANAGER_NOT_FOUND + userEmail));
 
-        List<ExpenseClaim> allSubmitted = expenseClaimRepository.findByStatus(ClaimStatus.SUBMITTED);
-
-
-        List<ExpenseClaim> claims = allSubmitted.stream()
-                .filter(claim -> {
-                    EmployeeManager empMgr = employeeManagerRepository.findByEmployee(claim.getEmployee())
-                            .orElse(null);
-                    return empMgr != null && empMgr.getManager().getId().equals(manager.getId());
-                })
-                .collect(Collectors.toList());
+            List<ExpenseClaim> allSubmitted = expenseClaimRepository.findByStatus(ClaimStatus.SUBMITTED);
 
 
-        return claims.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+            List<ExpenseClaim> claims = allSubmitted.stream()
+                    .filter(claim -> {
+                        EmployeeManager empMgr = employeeManagerRepository.findByEmployee(claim.getEmployee())
+                                .orElse(null);
+                        return empMgr != null && empMgr.getManager().getId().equals(manager.getId());
+                    })
+                    .collect(Collectors.toList());
 
-    }
 
-    /**
-     * Converts an ExpenseClaim entity into ClaimResponse.
-     * Includes manager info and all expense items attached to the claim.
-     * @param savedClaim - claim entity to convert
-     * @return - mapped response DTO
-     */
 
-    private ClaimResponse mapToResponse(ExpenseClaim savedClaim) {
 
-        String managerName = null;
-        Long managerId = null;
-
-        if (savedClaim.getApprovedBy() != null) {
-            managerName = savedClaim.getApprovedByName();
-            managerId = savedClaim.getApprovedBy().getId();
-        } else {
-            EmployeeManager empMgr = employeeManagerRepository.findByEmployee(savedClaim.getEmployee())
-                    .orElse(null);
-            if (empMgr != null && empMgr.getManager() != null) {
-                managerName = empMgr.getManager().getName();
-                managerId = empMgr.getManager().getId();
-            }
+            logger.info("Submitted claims retrieved successfully ");
+            return claimMapper.toClaimResponseList(claims);
+        } catch (UserNotFoundException e) {
+            logger.error("Could not retrieve the submitted claims,{}",e.getMessage());
+            throw e;
         }
-        List<ExpenseItem> itemList = expenseItemRepository.findByClaimClaimId(savedClaim.getClaimId());
 
-        List<ExpenseItemResponse> expenseItemResponseList = itemList.stream()
-                .map(this::mapItemToResponse)
-                .collect(Collectors.toUnmodifiableList());
-
-        return ClaimResponse.builder()
-                .claimId(savedClaim.getClaimId())
-                .claimNumber(savedClaim.getClaimNumber())
-                .title(savedClaim.getTitle())
-                .totalAmount(savedClaim.getTotalAmount())
-                .status(savedClaim.getStatus())
-                .employeeId(savedClaim.getEmployee().getId())
-                .employeeCode(savedClaim.getEmployee().getEmployeeCode())
-                .employeeName(savedClaim.getEmployee().getName())
-                .managerId(managerId)
-                .managerName(managerName)
-                .createdAt(savedClaim.getCreatedAt())
-                .submittedAt(savedClaim.getSubmittedAt())
-                .reviewedDate(savedClaim.getReviewedDate())
-                .reviewComment(savedClaim.getReviewComment())
-                .items(expenseItemResponseList)
-                .build();
     }
 
-    /**
-     *  Converts an ExpenseItem entity into a ExpenseItemResponse
-     *  Includes manager info and all expense items attached to the claim.
-     * @param expenseItem - claim entity to convert
-     * @return mapped response DTO
-     */
-    private ExpenseItemResponse mapItemToResponse(ExpenseItem expenseItem) {
-        return ExpenseItemResponse.builder()
-                .itemId(expenseItem.getItemId())
-                .claimId(expenseItem.getClaim().getClaimId())
-                .category(expenseItem.getCategory())
-                .description(expenseItem.getDescription())
-                .amount(expenseItem.getAmount())
-                .expenseDate(expenseItem.getExpenseDate())
-                .build();
-    }
 
 
     /**
@@ -156,6 +106,8 @@ public class ManagerService {
      */
     @Transactional
     public ClaimResponse getPendingClaimById(Long claimId, String userEmail){
+
+        logger.info("Retrieve the claim with id:{}",claimId);
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID + claimId));
 
@@ -165,7 +117,14 @@ public class ManagerService {
 
         validateClaimAccess(claim, manager);
 
-        return mapToResponse(claim);
+        validateSubmittedStatus(claim);
+
+
+
+
+        logger.info("Claim with id:{} retrieved successfully.",claimId);
+
+        return claimMapper.toClaimResponse(claim);
 
     }
 
@@ -178,6 +137,7 @@ public class ManagerService {
      */
     private void validateClaimAccess(ExpenseClaim claim, User user){
 
+        logger.info("Validating the claim access for the user:{}",user.getName());
         if(claim.getEmployee().getId().equals(user.getId())){
             return;
         }
@@ -207,6 +167,8 @@ public class ManagerService {
      */
     @Transactional
     public ClaimResponse approvePendingClaimById(Long claimId, ApproveClaimRequest approveClaimRequest, String userEmail){
+        logger.info("Approving the submitted claim:{}",claimId);
+
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID +claimId));
 
@@ -236,7 +198,10 @@ public class ManagerService {
                 oldStatus,
                 String.valueOf(ClaimStatus.APPROVED));
 
-        return mapToResponse(savedClaim);
+
+
+        logger.info("Claim {} approved successfully",claimId);
+        return claimMapper.toClaimResponse(savedClaim);
 
 
     }
@@ -252,6 +217,9 @@ public class ManagerService {
      */
     @Transactional
     public ClaimResponse rejectPendingClaimById(Long claimId, RejectClaimRequest rejectClaimRequest, String userEmail){
+
+        logger.info("Rejecting the submitted claim {}",claimId);
+
         ExpenseClaim claim = expenseClaimRepository.findById(claimId)
                 .orElseThrow(()->new ClaimNotFoundException(ErrorMessageConstants.CLAIM_NOT_FOUND_WITH_ID +claimId));
 
@@ -271,7 +239,7 @@ public class ManagerService {
 
         claim.setReviewComment(rejectClaimRequest.getComment());
 
-        //claim.setReviewComment("Claim Rejected");
+
 
 
         ExpenseClaim savedClaim= expenseClaimRepository.save(claim);
@@ -283,7 +251,9 @@ public class ManagerService {
                 claim.getStatus().name(),
                 String.valueOf(ClaimStatus.REJECTED));
 
-        return mapToResponse(savedClaim);
+
+        logger.info("The claim {} is rejected",claimId);
+        return claimMapper.toClaimResponse(savedClaim);
 
 
     }
@@ -302,6 +272,7 @@ public class ManagerService {
      * @param claim- claim that is to be approved
      */
     private void updateClaimStatusAndReviewDate(ExpenseClaim claim) {
+        logger.info("Updating claim status and review date ");
         claim.setStatus(ClaimStatus.APPROVED);
         claim.setReviewedDate(LocalDateTime.now());
 
@@ -313,6 +284,7 @@ public class ManagerService {
      * @param claim - claim that is accessed
      */
     private void validateSubmittedStatus(ExpenseClaim claim) {
+        logger.info("Validating the status of the claim");
         if(claim.getStatus() != ClaimStatus.SUBMITTED){
             throw new InvalidClaimStatus(ErrorMessageConstants.INVALID_CLAIM_STATUS_FOR_CLAIM_APPROVAL+ claim.getStatus());
         }
@@ -324,6 +296,7 @@ public class ManagerService {
      * @param manager - to check the access
      */
     private void validateManagerAssigned(ExpenseClaim claim, User manager) {
+        logger.info("Validating the assigned manager for the claim {}",claim.getClaimId());
         EmployeeManager empMgr = employeeManagerRepository.findByEmployee(claim.getEmployee())
                 .orElseThrow(() -> new UserNotFoundException(ErrorMessageConstants.EMPLOYEE_MANAGER_NOT_FOUND));
 

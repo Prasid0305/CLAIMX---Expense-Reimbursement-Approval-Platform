@@ -52,7 +52,6 @@ public class ClaimController {
         String email = AuthenticationContext.getUserEmail();
         ClaimResponse claimResponse = claimService.createClaim(createClaimRequest, email);
 
-//        return new ResponseEntity<>(claimResponse, HttpStatus.CREATED);
         return new ResponseEntity<>(ApiResponse.success(claimResponse, MessageResponseConstants.CLAIM_CREATED),HttpStatus.CREATED);
 
 
